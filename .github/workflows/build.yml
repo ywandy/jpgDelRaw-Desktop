@@ -57,7 +57,13 @@ jobs:
         run: pnpm test
 
       - name: Build Tauri bundles
-        run: pnpm dist
+        shell: bash
+        run: |
+          case "${{ runner.os }}" in
+            macOS) pnpm exec tauri build --bundles dmg ;;
+            Windows) pnpm exec tauri build --bundles nsis ;;
+            Linux) pnpm exec tauri build --bundles appimage ;;
+          esac
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
