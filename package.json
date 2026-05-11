@@ -42,7 +42,7 @@
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"tsc -p tsconfig.node.json --watch --preserveWatchOutput\" \"wait-on http://127.0.0.1:5173 dist-electron/electron/main.js && electron .\"",
     "build": "tsc -p tsconfig.node.json && tsc -p tsconfig.json --noEmit && vite build",
-    "dist": "pnpm build && electron-builder",
+    "dist": "pnpm build && electron-builder --publish never",
     "dist:dir": "pnpm build && electron-builder --dir",
     "start": "electron .",
     "test": "vitest run"
