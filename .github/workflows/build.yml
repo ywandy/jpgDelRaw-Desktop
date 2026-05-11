@@ -18,7 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13
+          - os: macos-latest
+
             bundles: app,dmg
             updater_target: darwin-x86_64
           - os: windows-latest
