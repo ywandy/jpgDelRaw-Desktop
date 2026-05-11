@@ -50,8 +50,7 @@ export default function App() {
     }
   }
 
-  function acceptDroppedFile(file: File): void {
-    const filePath = api.getPathForFile(file);
+  function acceptDroppedPath(filePath: string): void {
     if (!filePath) {
       setError("无法读取拖入目录路径，请点击选择目录。");
       return;
@@ -172,7 +171,7 @@ export default function App() {
           scanning={scanning}
           onModeChange={setMode}
           onBrowse={() => void browseDirectory()}
-          onDropFile={acceptDroppedFile}
+          onDropPath={acceptDroppedPath}
           onStartScan={() => void startScan()}
         />
       )}

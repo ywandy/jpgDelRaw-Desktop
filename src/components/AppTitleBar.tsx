@@ -1,4 +1,5 @@
 import { Camera, Maximize2, Minus, X } from "lucide-react";
+import type { MouseEvent } from "react";
 
 import { APP_TITLE } from "../../shared/constants";
 import type { PlatformName } from "../../shared/types";
@@ -13,12 +14,19 @@ export function AppTitleBar({ platform }: AppTitleBarProps) {
   const tone = getPlatformTone(platform);
   const isMac = tone === "mac";
 
+  function startDragging(event: MouseEvent<HTMLElement>): void {
+    if (event.button !== 0) return;
+    if ((event.target as HTMLElement).closest("button")) return;
+    void api.windowStartDragging();
+  }
+
   return (
     <header
       className={[
         "drag-region flex h-14 shrink-0 items-center",
         tone === "linux" ? "bg-zinc-900 text-white" : "bg-[#f4efe8] text-[#6d6459]"
       ].join(" ")}
+      onMouseDown={startDragging}
     >
       <div className={["drag-region flex h-full shrink-0 items-center px-4", isMac ? "w-56 min-[1200px]:w-60" : "w-56 min-[1200px]:w-60"].join(" ")}>
         {!isMac && <div className="type-ui flex items-center gap-2" />}
