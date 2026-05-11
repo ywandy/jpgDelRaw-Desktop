@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import path from "node:path";
 
-import { APP_TITLE } from "../shared/constants.js";
+import { APP_TITLE, APP_WINDOW_BOUNDS } from "../shared/constants.js";
 import type { DeleteContext, DeleteMode, MediaFile, ScanOptions, ScanResult } from "../shared/types.js";
 import { compareFiles } from "./services/compareService.js";
 import { scanDirectory } from "./services/scanService.js";
@@ -14,14 +14,11 @@ let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 1080,
-    height: 720,
-    minWidth: 900,
-    minHeight: 640,
+    ...APP_WINDOW_BOUNDS,
     title: APP_TITLE,
     frame: false,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#f4efe8",
     trafficLightPosition: { x: 18, y: 17 },
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),

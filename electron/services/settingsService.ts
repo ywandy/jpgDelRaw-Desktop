@@ -27,6 +27,10 @@ export async function saveSettings(settings: AppSettings, userDataPath?: string)
 
 function mergeSettings(settings: Partial<AppSettings>): AppSettings {
   return {
+    appearance: {
+      ...DEFAULT_SETTINGS.appearance,
+      ...settings.appearance
+    },
     scan: {
       ...DEFAULT_SETTINGS.scan,
       ...settings.scan

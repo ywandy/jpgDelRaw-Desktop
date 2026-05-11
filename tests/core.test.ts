@@ -5,7 +5,9 @@ import { describe, expect, test } from "vitest";
 
 import { compareFiles } from "../electron/services/compareService";
 import { scanDirectory } from "../electron/services/scanService";
+import { getSettings, saveSettings } from "../electron/services/settingsService";
 import { moveFilesToTrash } from "../electron/services/trashService";
+import { APP_WINDOW_BOUNDS, DEFAULT_SETTINGS } from "../shared/constants";
 import { getFileKey, getMediaKind } from "../shared/fileUtils";
 import type { DeleteContext, MediaFile, ScanResult } from "../shared/types";
 
@@ -41,6 +43,15 @@ describe("shared file utilities", () => {
     expect(getMediaKind("photo.CR3")).toBe("raw");
     expect(getMediaKind("photo.XMP")).toBe("sidecar");
     expect(getMediaKind("photo.txt")).toBe("unknown");
+  });
+});
+
+describe("app window bounds", () => {
+  test("uses a 1200px desktop minimum width", () => {
+    expect(APP_WINDOW_BOUNDS.width).toBe(1200);
+    expect(APP_WINDOW_BOUNDS.minWidth).toBe(1200);
+    expect(APP_WINDOW_BOUNDS.height).toBe(820);
+    expect(APP_WINDOW_BOUNDS.minHeight).toBe(720);
   });
 });
 
@@ -144,6 +155,52 @@ describe("moveFilesToTrash", () => {
       expect(result.success).toBe(1);
       expect(result.failed).toBe(0);
       expect(result.logPath).toBe(path.join(userDataPath, "logs", "delete-log-2026-05-09-10-30-00.json"));
+    });
+  });
+});
+
+describe("settingsService", () => {
+  test("fills default appearance settings when reading an older settings file", async () => {
+    await withTempDir(async (userDataPath) => {
+      await writeFile(
+        path.join(userDataPath, "settings.json"),
+        JSON.stringify({
+          scan: {
+            recursive: false,
+            includeHiddenFiles: true,
+            ignoreCase: false
+          },
+          delete: {
+            requireConfirmText: false,
+            generateLog: false
+          }
+        }),
+        "utf8"
+      );
+
+      const settings = await getSettings(userDataPath);
+
+      expect(settings.appearance).toEqual({ fontScale: "medium" });
+      expect(settings.scan.recursive).toBe(false);
+      expect(settings.delete.generateLog).toBe(false);
+    });
+  });
+
+  test("persists selected font scale when saving settings", async () => {
+    await withTempDir(async (userDataPath) => {
+      await saveSettings(
+        {
+          ...DEFAULT_SETTINGS,
+          appearance: {
+            fontScale: "large"
+          }
+        },
+        userDataPath
+      );
+
+      const settings = await getSettings(userDataPath);
+
+      expect(settings.appearance.fontScale).toBe("large");
     });
   });
 });

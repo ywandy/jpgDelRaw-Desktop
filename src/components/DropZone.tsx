@@ -32,12 +32,12 @@ export function DropZone({ rootPath, disabled, onBrowse, onDropFile }: DropZoneP
       }}
     >
       <UploadCloud className="mb-3 h-10 w-10 text-indigo-600" />
-      <div className="text-lg font-semibold text-indigo-700">拖入照片目录到这里</div>
-      <div className="mt-2 max-w-xl truncate text-sm text-slate-500">
+      <div className="type-section-title text-indigo-700">拖入照片目录到这里</div>
+      <div className="type-body mt-2 max-w-xl truncate text-slate-500">
         {rootPath || "支持拖拽文件夹到此处，或点击选择目录"}
       </div>
       <button
-        className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700"
+        className="type-ui mt-5 inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700"
         disabled={disabled}
         onClick={onBrowse}
       >

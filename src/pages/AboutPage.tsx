@@ -11,13 +11,13 @@ export function AboutPage() {
         <Camera className="h-11 w-11" />
       </div>
       <div>
-        <h1 className="text-3xl font-bold text-slate-950">{APP_TITLE}</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-500">一个用于对比 JPG 与 RAW 文件关系的安全清理工具。</p>
-        <p className="mt-2 text-sm font-semibold text-slate-700">版本：v{APP_VERSION}</p>
+        <h1 className="type-page-title text-slate-950">{APP_TITLE}</h1>
+        <p className="type-body mt-3 text-slate-500">一个用于对比 JPG 与 RAW 文件关系的安全清理工具。</p>
+        <p className="type-ui mt-2 text-slate-700">版本：v{APP_VERSION}</p>
       </div>
       <div className="grid w-full grid-cols-2 gap-3">
         {capabilities.map((item) => (
-          <div key={item} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left text-sm font-medium text-slate-700 shadow-sm">
+          <div key={item} className="type-body flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left text-slate-700 shadow-sm">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
             {item}
           </div>

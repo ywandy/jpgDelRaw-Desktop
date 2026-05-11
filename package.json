@@ -3,15 +3,48 @@
   "version": "1.0.0",
   "description": "RAW Pair Cleaner / 底片清理器",
   "main": "dist-electron/electron/main.js",
+  "build": {
+    "appId": "com.ywandy.rawpaircleaner",
+    "productName": "RAW Pair Cleaner",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.photography",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Graphics"
+    }
+  },
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"tsc -p tsconfig.node.json --watch --preserveWatchOutput\" \"wait-on http://127.0.0.1:5173 dist-electron/electron/main.js && electron .\"",
     "build": "tsc -p tsconfig.node.json && tsc -p tsconfig.json --noEmit && vite build",
+    "dist": "pnpm build && electron-builder",
+    "dist:dir": "pnpm build && electron-builder --dir",
     "start": "electron .",
     "test": "vitest run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "electron": "latest",
     "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest"
@@ -22,6 +55,8 @@
     "@types/react-dom": "latest",
     "autoprefixer": "^10.4.20",
     "concurrently": "latest",
+    "electron": "latest",
+    "electron-builder": "^26.8.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "latest",

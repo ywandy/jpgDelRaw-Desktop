@@ -114,6 +114,20 @@ export default function App() {
     setSelectedPaths(allSelected ? new Set() : new Set(allPaths));
   }
 
+  function setFilesSelected(paths: string[], selected: boolean): void {
+    setSelectedPaths((current) => {
+      const next = new Set(current);
+      for (const filePath of paths) {
+        if (selected) {
+          next.add(filePath);
+        } else {
+          next.delete(filePath);
+        }
+      }
+      return next;
+    });
+  }
+
   async function confirmDelete(): Promise<void> {
     if (!compareResult || !scanResult || selectedSize < 0) return;
     const files = selectedMediaFiles(compareResult, selectedPaths);
@@ -149,7 +163,7 @@ export default function App() {
   }
 
   return (
-    <AppLayout currentPage={currentPage} platform={platform} onNavigate={setCurrentPage}>
+    <AppLayout currentPage={currentPage} platform={platform} fontScale={settings.appearance.fontScale} onNavigate={setCurrentPage}>
       {currentPage === "home" && (
         <HomePage
           rootPath={rootPath}
@@ -182,6 +196,7 @@ export default function App() {
           mode={mode}
           onToggleFile={toggleFile}
           onToggleAll={toggleAll}
+          onSetFilesSelected={setFilesSelected}
           onOpenConfirm={() => setConfirmOpen(true)}
           onCloseConfirm={() => setConfirmOpen(false)}
           onConfirmDelete={() => void confirmDelete()}

@@ -8,6 +8,8 @@ export type CompareConflictReason = "duplicate_image" | "duplicate_raw" | "ambig
 
 export type PlatformName = "darwin" | "win32" | "linux" | NodeJS.Platform;
 
+export type FontScale = "small" | "medium" | "large";
+
 export interface MediaFile {
   path: string;
   name: string;
@@ -83,6 +85,9 @@ export interface DeleteResult {
 }
 
 export interface AppSettings {
+  appearance: {
+    fontScale: FontScale;
+  };
   scan: {
     recursive: boolean;
     includeHiddenFiles: boolean;

@@ -10,7 +10,7 @@ export function DirectoryModeBadge({ mode }: { mode: DirectoryMode }) {
         : "bg-orange-50 text-orange-700 ring-orange-200";
 
   return (
-    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 ${className}`}>
+    <span className={`type-caption inline-flex items-center rounded-full px-3 py-1 ring-1 ${className}`}>
       {formatDirectoryMode(mode)}
     </span>
   );
