@@ -4,6 +4,7 @@ dist-electron/
 release/
 src-tauri/target/
 src-tauri/keys/
+src-tauri/gen/
 .vite/
 .DS_Store
 *.log
