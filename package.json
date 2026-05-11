@@ -1,6 +1,6 @@
 {
   "name": "raw-pair-cleaner",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "RAW Pair Cleaner / 底片清理器",
   "author": {
     "name": "ywandy",
@@ -11,12 +11,15 @@
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "dist": "tauri build --bundles dmg",
     "start": "tauri dev",
-    "test": "vitest run"
+    "test": "vitest run",
+    "version:check": "node scripts/check-version.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-os": "^2.3.2",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "@vitejs/plugin-react": "latest",
     "lucide-react": "latest",
     "react": "latest",

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "RAW Pair Cleaner",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.ywandy.rawpaircleaner",
   "build": {
     "beforeDevCommand": "pnpm vite --host 127.0.0.1",
@@ -42,12 +42,23 @@
       "icons/icon.ico",
       "icons/icon.png"
     ],
-    "targets": ["app"],
+    "targets": [
+      "app"
+    ],
+    "createUpdaterArtifacts": true,
     "category": "Photography",
     "shortDescription": "RAW Pair Cleaner",
     "longDescription": "Safely find unmatched JPG-like and RAW photo files and move selected redundancies to the system trash.",
     "macOS": {
       "minimumSystemVersion": "10.15"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhEMDFDRUUzODUzQzZCMTMKUldRVGF6eUY0ODRCalM4WGdMZUMreEwxSG5qZ0FoWjFhSGZhWVQ2SnpjZmlSNHVHV3N3RWcyZTIK",
+      "endpoints": [
+        "https://github.com/ywandy/jpgDelRaw-Desktop/releases/latest/download/latest.json"
+      ]
     }
   }
 }

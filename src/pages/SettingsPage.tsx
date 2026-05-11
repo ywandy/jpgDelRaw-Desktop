@@ -1,15 +1,20 @@
-import { Save } from "lucide-react";
+import { RefreshCw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { AppSettings, FontScale } from "../../shared/types";
+import type { UpdateInfo } from "../lib/updater";
 
 interface SettingsPageProps {
   settings: AppSettings;
   saving: boolean;
+  updateStatus?: "idle" | "checking" | "available" | "not-available" | "downloading" | "ready" | "error";
+  updateInfo?: UpdateInfo;
+  updateError?: string;
   onSave: (settings: AppSettings) => void;
+  onCheckUpdate: () => void;
 }
 
-export function SettingsPage({ settings, saving, onSave }: SettingsPageProps) {
+export function SettingsPage({ settings, saving, updateStatus = "idle", updateInfo, updateError, onSave, onCheckUpdate }: SettingsPageProps) {
   const [draft, setDraft] = useState(settings);
 
   useEffect(() => {
@@ -22,7 +27,7 @@ export function SettingsPage({ settings, saving, onSave }: SettingsPageProps) {
         <div className="space-y-5 pb-6">
           <div>
             <h1 className="type-page-title text-slate-950">设置</h1>
-            <p className="type-page-subtitle mt-1 text-slate-500">扫描、安全确认、外观与附属文件行为</p>
+            <p className="type-page-subtitle mt-1 text-slate-500">扫描、安全确认、外观、更新与附属文件行为</p>
           </div>
 
           <SettingsSection title="外观设置">
@@ -67,6 +72,32 @@ export function SettingsPage({ settings, saving, onSave }: SettingsPageProps) {
               checked={draft.delete.generateLog}
               onChange={(value) => setDraft({ ...draft, delete: { ...draft.delete, generateLog: value } })}
             />
+          </SettingsSection>
+
+          <SettingsSection title="更新设置">
+            <ToggleRow
+              label="启动时自动检查更新"
+              checked={draft.updates.autoCheckOnStartup}
+              onChange={(value) => setDraft({ ...draft, updates: { ...draft.updates, autoCheckOnStartup: value } })}
+            />
+            <div className="flex min-h-14 flex-wrap items-center justify-between gap-4 py-3">
+              <div>
+                <div className="type-ui text-slate-700">手动检查更新</div>
+                <div className="type-caption mt-1 text-slate-500">最近检查：{formatLastCheckedAt(draft.updates.lastCheckedAt)}</div>
+                <div className={`type-caption mt-1 ${updateStatus === "error" ? "text-[#9d3f44]" : "text-[#2f688b]"}`}>
+                  {getUpdateStatusMessage(updateStatus, updateInfo, updateError)}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="type-ui inline-flex h-10 items-center gap-2 rounded-xl border border-[#b8d1e0] bg-white px-4 text-[#2f688b] transition hover:bg-[#f4fbff] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={updateStatus === "checking" || updateStatus === "downloading"}
+                onClick={onCheckUpdate}
+              >
+                <RefreshCw className={`h-4 w-4 ${updateStatus === "checking" ? "animate-spin" : ""}`} />
+                {updateStatus === "checking" ? "检查中" : "检查更新"}
+              </button>
+            </div>
           </SettingsSection>
 
           <SettingsSection title="附属文件">
@@ -149,4 +180,22 @@ function ToggleRow({
       />
     </label>
   );
+}
+
+function formatLastCheckedAt(value?: string): string {
+  if (!value) return "尚未检查";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function getUpdateStatusMessage(status: SettingsPageProps["updateStatus"], info?: UpdateInfo, error?: string): string {
+  if (status === "checking") return "正在检查最新版本...";
+  if (status === "available" && info) return `发现新版本 ${info.version}，当前版本 ${info.currentVersion}。`;
+  if (status === "not-available") return "已经是最新版本。";
+  if (status === "downloading") return info ? `正在下载并安装 ${info.version}。` : "正在下载并安装更新。";
+  if (status === "ready") return info ? `${info.version} 已安装，重启后生效。` : "更新已安装，重启后生效。";
+  if (status === "error") return error || "检查更新失败，请稍后重试。";
+  if (info) return `最新检查发现版本 ${info.version}。`;
+  return "点击检查后会显示最新版本状态。";
 }

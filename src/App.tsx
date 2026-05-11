@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { DEFAULT_SETTINGS } from "../shared/constants";
 import type { AppSettings, CompareResult, DeleteMode, DeleteResult, PlatformName, ScanResult } from "../shared/types";
 import { AppLayout } from "./components/AppLayout";
+import { UpdateDialog } from "./components/UpdateDialog";
 import { api } from "./lib/api";
+import { checkForUpdate, downloadAndInstallUpdate, relaunchApp, type UpdateInfo, type UpdateProgress } from "./lib/updater";
 import { AboutPage } from "./pages/AboutPage";
 import { HomePage } from "./pages/HomePage";
 import { PendingDeletePage, selectedMediaFiles } from "./pages/PendingDeletePage";
@@ -11,10 +13,15 @@ import { ScanResultPage } from "./pages/ScanResultPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import type { PageKey } from "./types/navigation";
 
+type UpdateStatus = "idle" | "checking" | "available" | "not-available" | "downloading" | "ready" | "error";
+
+const AUTO_UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>("home");
   const [platform, setPlatform] = useState<PlatformName>("darwin");
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [rootPath, setRootPath] = useState<string>();
   const [mode, setMode] = useState<DeleteMode>("jpg_as_source_delete_raw");
   const [scanResult, setScanResult] = useState<ScanResult>();
@@ -26,17 +33,43 @@ export default function App() {
   const [deleting, setDeleting] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo>();
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>("idle");
+  const [updateError, setUpdateError] = useState<string>();
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+  const [pendingUpdatePrompt, setPendingUpdatePrompt] = useState(false);
+  const [downloadedUpdateBytes, setDownloadedUpdateBytes] = useState(0);
+  const [updateContentLength, setUpdateContentLength] = useState<number>();
+  const updateBusy = updateStatus === "checking" || updateStatus === "downloading";
+  const appBusyForUpdatePrompt = scanning || deleting || confirmOpen;
 
   useEffect(() => {
     void api
       .getSettings()
       .then(setSettings)
-      .catch(() => setSettings(DEFAULT_SETTINGS));
+      .catch(() => setSettings(DEFAULT_SETTINGS))
+      .finally(() => setSettingsLoaded(true));
     void api
       .getPlatform()
       .then(setPlatform)
       .catch(() => setPlatform("darwin"));
   }, []);
+
+  useEffect(() => {
+    if (!settingsLoaded || !settings.updates.autoCheckOnStartup || !shouldAutoCheck(settings.updates.lastCheckedAt)) return;
+
+    const timer = window.setTimeout(() => {
+      void runUpdateCheck({ manual: false });
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [settingsLoaded, settings.updates.autoCheckOnStartup, settings.updates.lastCheckedAt]);
+
+  useEffect(() => {
+    if (!pendingUpdatePrompt || appBusyForUpdatePrompt) return;
+    setUpdateDialogOpen(true);
+    setPendingUpdatePrompt(false);
+  }, [appBusyForUpdatePrompt, pendingUpdatePrompt]);
 
   const selectedSize = useMemo(() => {
     return selectedMediaFiles(compareResult, selectedPaths).reduce((total, file) => total + file.size, 0);
@@ -62,6 +95,10 @@ export default function App() {
   async function startScan(): Promise<void> {
     if (!rootPath) {
       setError("请先选择照片目录。");
+      return;
+    }
+    if (updateStatus === "downloading") {
+      setError("正在安装更新，请等待完成后再扫描。");
       return;
     }
 
@@ -129,6 +166,10 @@ export default function App() {
 
   async function confirmDelete(): Promise<void> {
     if (!compareResult || !scanResult || selectedSize < 0) return;
+    if (updateStatus === "downloading") {
+      setError("正在安装更新，请等待完成后再删除文件。");
+      return;
+    }
     const files = selectedMediaFiles(compareResult, selectedPaths);
     if (files.length === 0) return;
 
@@ -161,8 +202,105 @@ export default function App() {
     }
   }
 
+  async function runUpdateCheck({ manual }: { manual: boolean }): Promise<void> {
+    if (updateBusy) return;
+
+    setUpdateStatus("checking");
+    setUpdateError(undefined);
+    if (manual) setError(undefined);
+
+    try {
+      const result = await checkForUpdate();
+      const checkedAt = new Date().toISOString();
+      await persistUpdateLastCheckedAt(checkedAt);
+
+      if (!result.available || !result.info) {
+        setUpdateInfo(undefined);
+        setUpdateStatus(manual ? "not-available" : "idle");
+        return;
+      }
+
+      setUpdateInfo(result.info);
+      setUpdateStatus("available");
+      if (manual || !appBusyForUpdatePrompt) {
+        setUpdateDialogOpen(true);
+      } else {
+        setPendingUpdatePrompt(true);
+      }
+    } catch (updateCheckError) {
+      if (manual) {
+        const message = getErrorMessage(updateCheckError);
+        setUpdateError(message);
+        setUpdateStatus("error");
+      } else {
+        setUpdateStatus("idle");
+      }
+    }
+  }
+
+  async function persistUpdateLastCheckedAt(lastCheckedAt: string): Promise<void> {
+    const nextSettings = { ...settings, updates: { ...settings.updates, lastCheckedAt } };
+    setSettings(nextSettings);
+    await api.saveSettings(nextSettings);
+  }
+
+  async function installUpdate(): Promise<void> {
+    if (!updateInfo) return;
+    if (scanning || deleting || confirmOpen) {
+      setUpdateError("请等待当前扫描或删除操作完成后再安装更新。");
+      setUpdateStatus("error");
+      return;
+    }
+
+    setUpdateStatus("downloading");
+    setDownloadedUpdateBytes(0);
+    setUpdateContentLength(undefined);
+    setUpdateError(undefined);
+    setError(undefined);
+
+    try {
+      await downloadAndInstallUpdate(handleUpdateProgress);
+      setUpdateStatus("ready");
+    } catch (updateError) {
+      setUpdateError(getErrorMessage(updateError));
+      setUpdateStatus("error");
+    }
+  }
+
+  function handleUpdateProgress(progress: UpdateProgress): void {
+    if (progress.phase === "started") {
+      setDownloadedUpdateBytes(0);
+      setUpdateContentLength(progress.contentLength);
+    } else if (progress.phase === "progress") {
+      setDownloadedUpdateBytes(progress.downloaded);
+      setUpdateContentLength(progress.contentLength);
+    } else {
+      setUpdateContentLength((current) => current);
+    }
+  }
+
+  async function restartForUpdate(): Promise<void> {
+    if (scanning || deleting || confirmOpen) {
+      setUpdateError("请等待当前扫描或删除操作完成后再重启。");
+      setUpdateStatus("error");
+      return;
+    }
+    await relaunchApp();
+  }
+
   return (
     <AppLayout currentPage={currentPage} platform={platform} fontScale={settings.appearance.fontScale} onNavigate={setCurrentPage}>
+      <UpdateDialog
+        open={updateDialogOpen}
+        info={updateInfo}
+        status={updateStatus === "ready" ? "ready" : updateStatus === "downloading" ? "downloading" : updateStatus === "error" ? "error" : "available"}
+        downloaded={downloadedUpdateBytes}
+        contentLength={updateContentLength}
+        error={updateError}
+        onCancel={() => setUpdateDialogOpen(false)}
+        onInstall={() => void installUpdate()}
+        onRelaunch={() => void restartForUpdate()}
+      />
       {currentPage === "home" && (
         <HomePage
           rootPath={rootPath}
@@ -202,8 +340,26 @@ export default function App() {
           onCancel={() => setCurrentPage("scanResult")}
         />
       )}
-      {currentPage === "settings" && <SettingsPage settings={settings} saving={savingSettings} onSave={(nextSettings) => void saveSettings(nextSettings)} />}
-      {currentPage === "about" && <AboutPage />}
+      {currentPage === "settings" && (
+        <SettingsPage
+          settings={settings}
+          saving={savingSettings}
+          updateStatus={updateStatus}
+          updateInfo={updateInfo}
+          updateError={updateError}
+          onSave={(nextSettings) => void saveSettings(nextSettings)}
+          onCheckUpdate={() => void runUpdateCheck({ manual: true })}
+        />
+      )}
+      {currentPage === "about" && (
+        <AboutPage
+          updateInfo={updateInfo}
+          updateStatus={updateStatus}
+          updateError={updateError}
+          onCheckUpdate={() => void runUpdateCheck({ manual: true })}
+          onShowUpdate={() => setUpdateDialogOpen(true)}
+        />
+      )}
     </AppLayout>
   );
 }
@@ -212,6 +368,13 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   return "操作失败，请重试。";
+}
+
+function shouldAutoCheck(lastCheckedAt?: string): boolean {
+  if (!lastCheckedAt) return true;
+  const checkedAt = new Date(lastCheckedAt).getTime();
+  if (Number.isNaN(checkedAt)) return true;
+  return Date.now() - checkedAt >= AUTO_UPDATE_CHECK_INTERVAL_MS;
 }
 
 function getNoComparableFilesMessage(scanResult: ScanResult): string {

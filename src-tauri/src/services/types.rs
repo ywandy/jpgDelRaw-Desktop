@@ -147,6 +147,7 @@ pub struct AppSettings {
     pub scan: ScanOptions,
     pub delete: DeleteSettings,
     pub sidecar: SidecarSettings,
+    pub updates: UpdateSettings,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -167,6 +168,14 @@ pub struct DeleteSettings {
 pub struct SidecarSettings {
     pub delete_with_raw: bool,
     pub extensions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateSettings {
+    pub auto_check_on_startup: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_checked_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -195,6 +204,10 @@ impl Default for AppSettings {
             sidecar: SidecarSettings {
                 delete_with_raw: false,
                 extensions: SIDECAR_EXTENSIONS.iter().map(|ext| (*ext).to_string()).collect(),
+            },
+            updates: UpdateSettings {
+                auto_check_on_startup: true,
+                last_checked_at: None,
             },
         }
     }

@@ -86,5 +86,14 @@ fn merge_settings(value: serde_json::Value) -> AppSettings {
         }
     }
 
+    if let Some(updates) = value.get("updates") {
+        if let Some(auto_check_on_startup) = updates.get("autoCheckOnStartup").and_then(|value| value.as_bool()) {
+            settings.updates.auto_check_on_startup = auto_check_on_startup;
+        }
+        if let Some(last_checked_at) = updates.get("lastCheckedAt").and_then(|value| value.as_str()) {
+            settings.updates.last_checked_at = Some(last_checked_at.to_string());
+        }
+    }
+
     settings
 }

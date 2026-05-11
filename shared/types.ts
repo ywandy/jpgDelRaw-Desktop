@@ -84,6 +84,11 @@ export interface DeleteResult {
   items: DeleteResultItem[];
 }
 
+export interface UpdateSettings {
+  autoCheckOnStartup: boolean;
+  lastCheckedAt?: string;
+}
+
 export interface AppSettings {
   appearance: {
     fontScale: FontScale;
@@ -101,4 +106,5 @@ export interface AppSettings {
     deleteWithRaw: boolean;
     extensions: string[];
   };
+  updates: UpdateSettings;
 }
