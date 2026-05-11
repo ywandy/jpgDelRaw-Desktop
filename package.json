@@ -2,6 +2,10 @@
   "name": "raw-pair-cleaner",
   "version": "1.0.0",
   "description": "RAW Pair Cleaner / 底片清理器",
+  "author": {
+    "name": "ywandy",
+    "email": "ywandy@users.noreply.github.com"
+  },
   "main": "dist-electron/electron/main.js",
   "build": {
     "appId": "com.ywandy.rawpaircleaner",

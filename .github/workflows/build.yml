@@ -45,9 +45,7 @@ jobs:
         run: pnpm test
 
       - name: Build installers
-        run: pnpm dist
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm dist -- --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
