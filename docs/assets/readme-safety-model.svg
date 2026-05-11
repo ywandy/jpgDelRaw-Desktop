@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="560" viewBox="0 0 1280 560" role="img" aria-labelledby="title desc">
+  <title id="title">RAW Pair Cleaner safety model</title>
+  <desc id="desc">A safety model diagram describing candidate generation, conflict blocking, confirmation, system trash, and JSON operation logs.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fffdf8"/>
+      <stop offset="1" stop-color="#edf3e7"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#91b88b"/>
+      <stop offset="1" stop-color="#4f7b52"/>
+    </linearGradient>
+    <filter id="shadow" x="-12%" y="-12%" width="124%" height="124%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#574b3a" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="560" rx="30" fill="url(#bg)"/>
+  <text x="80" y="90" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="850" fill="#28231f">安全边界</text>
+  <text x="80" y="124" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" fill="#7d7469">删除逻辑默认保守：候选可见、冲突阻断、二次确认、只进系统回收站</text>
+
+  <g filter="url(#shadow)">
+    <path d="M638 136c82 48 163 54 246 24v119c0 104-53 181-246 243-193-62-246-139-246-243V160c83 30 164 24 246-24z" fill="url(#shield)"/>
+    <path d="M560 322l55 56 116-127" fill="none" stroke="#fffdf8" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="638" y="473" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" font-weight="850" fill="#ffffff">No hard delete</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <g transform="translate(80 176)">
+      <rect width="274" height="122" rx="22" fill="#ffffff" stroke="#e5dccc" stroke-width="2"/>
+      <rect x="24" y="24" width="52" height="52" rx="16" fill="#e6f1f8"/>
+      <path d="M39 51h22m-11-11v22" stroke="#82b6d6" stroke-width="7" stroke-linecap="round"/>
+      <text x="94" y="48" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="850" fill="#28231f">候选列表先展示</text>
+      <text x="94" y="78" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#7d7469">用户能在删除前复核和取消勾选</text>
+    </g>
+
+    <g transform="translate(80 332)">
+      <rect width="274" height="122" rx="22" fill="#ffffff" stroke="#e5dccc" stroke-width="2"/>
+      <rect x="24" y="24" width="52" height="52" rx="16" fill="#fff0df"/>
+      <path d="M38 39l25 25m0-25L38 64" stroke="#db7e5b" stroke-width="8" stroke-linecap="round"/>
+      <text x="94" y="48" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="850" fill="#28231f">冲突不自动删</text>
+      <text x="94" y="78" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#7d7469">重复 JPG、重复 RAW、歧义匹配会阻断</text>
+    </g>
+
+    <g transform="translate(926 176)">
+      <rect width="274" height="122" rx="22" fill="#ffffff" stroke="#e5dccc" stroke-width="2"/>
+      <rect x="24" y="24" width="52" height="52" rx="16" fill="#f7e2e3"/>
+      <path d="M40 48h20m-20 18h27" stroke="#c95f64" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="68" cy="48" r="6" fill="#c95f64"/>
+      <text x="94" y="48" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="850" fill="#28231f">确认文本可开启</text>
+      <text x="94" y="78" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#7d7469">默认要求输入“确认删除”</text>
+    </g>
+
+    <g transform="translate(926 332)">
+      <rect width="274" height="122" rx="22" fill="#ffffff" stroke="#e5dccc" stroke-width="2"/>
+      <rect x="24" y="24" width="52" height="52" rx="16" fill="#e8f1e5"/>
+      <path d="M38 40h26l-3 34H41zm-5-9h36m-22 0v-6h12v6" fill="none" stroke="#4f7b52" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="94" y="48" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="850" fill="#28231f">系统回收站</text>
+      <text x="94" y="78" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#7d7469">调用 Tauri 后端移动文件并写日志</text>
+    </g>
+  </g>
+</svg>

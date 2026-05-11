@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">RAW Pair Cleaner application overview</title>
+  <desc id="desc">A stylized desktop application screenshot showing the sidebar, directory drop zone, delete modes, and safety-focused controls.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8f3eb"/>
+      <stop offset="1" stop-color="#dfeade"/>
+    </linearGradient>
+    <filter id="shadow" x="-12%" y="-12%" width="124%" height="124%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#574b3a" flood-opacity="0.18"/>
+    </filter>
+    <filter id="soft" x="-18%" y="-18%" width="136%" height="136%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#574b3a" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="760" rx="38" fill="url(#bg)"/>
+  <circle cx="1086" cy="135" r="120" fill="#82b6d6" opacity="0.16"/>
+  <circle cx="178" cy="642" r="150" fill="#efb052" opacity="0.12"/>
+
+  <g filter="url(#shadow)">
+    <rect x="82" y="72" width="1116" height="616" rx="34" fill="#f4efe8"/>
+    <rect x="82" y="72" width="1116" height="52" rx="34" fill="#efe7dc"/>
+    <circle cx="124" cy="98" r="8" fill="#e46c62"/>
+    <circle cx="151" cy="98" r="8" fill="#f0b857"/>
+    <circle cx="178" cy="98" r="8" fill="#75b87a"/>
+    <text x="640" y="105" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#6d6459">RAW Pair Cleaner / 底片清理器</text>
+
+    <rect x="106" y="148" width="214" height="504" rx="28" fill="#fffdf8" stroke="#e5dccc" stroke-width="2"/>
+    <rect x="135" y="180" width="54" height="54" rx="17" fill="#7ba17c"/>
+    <path d="M152 207c0-9 7-16 16-16h5l5 7h14c9 0 16 7 16 16v15c0 9-7 16-16 16h-24c-9 0-16-7-16-16z" fill="#fffdf8" transform="scale(.78) translate(30 52)"/>
+    <text x="204" y="203" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" font-weight="800" fill="#28231f">RAW Pair</text>
+    <text x="204" y="227" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#9a9185">底片清理器</text>
+
+    <rect x="132" y="284" width="162" height="44" rx="14" fill="#e8f1e5"/>
+    <circle cx="154" cy="306" r="7" fill="#7ba17c"/>
+    <text x="174" y="311" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#315b35">开始清理</text>
+    <text x="132" y="370" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#6d6459">设置</text>
+    <text x="132" y="420" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#6d6459">关于</text>
+    <text x="132" y="610" font-family="SFMono-Regular, Consolas, monospace" font-size="13" fill="#9a9185">v1.0.0</text>
+
+    <rect x="346" y="148" width="826" height="504" rx="28" fill="#fffdf8" stroke="#e5dccc" stroke-width="2"/>
+    <g transform="translate(386 186)">
+      <rect width="64" height="64" rx="20" fill="#4f7b52"/>
+      <path d="M20 42l10-13 9 9 13-18 12 22z" fill="#dfeade"/>
+      <circle cx="46" cy="23" r="8" fill="#efb052"/>
+    </g>
+    <text x="470" y="209" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="850" fill="#28231f">RAW Pair Cleaner</text>
+    <text x="470" y="242" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" fill="#7d7469">智能识别 RAW 与 JPG 匹配关系，安全清理冗余文件</text>
+
+    <g filter="url(#soft)">
+      <rect x="386" y="284" width="742" height="132" rx="22" fill="#ffffff" stroke="#c7d8e4" stroke-width="3" stroke-dasharray="12 12"/>
+      <circle cx="475" cy="350" r="31" fill="#e6f1f8"/>
+      <path d="M458 352h34m-17-17v34" stroke="#82b6d6" stroke-width="8" stroke-linecap="round"/>
+      <text x="532" y="342" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" font-weight="800" fill="#315b35">拖入照片目录</text>
+      <text x="532" y="374" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#8b8175">支持混合目录或 JPG / RAW 分离目录</text>
+    </g>
+
+    <g transform="translate(386 454)">
+      <rect width="350" height="116" rx="20" fill="#ffffff" stroke="#d8ccb9" stroke-width="2"/>
+      <circle cx="34" cy="36" r="11" fill="#7ba17c"/>
+      <text x="58" y="42" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="800" fill="#28231f">以 JPG 为准</text>
+      <text x="58" y="72" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" fill="#7d7469">删除没有对应 JPG 的 RAW</text>
+      <rect x="250" y="35" width="62" height="32" rx="10" fill="#fff0df"/>
+      <text x="281" y="56" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800" fill="#b15d22">RAW</text>
+    </g>
+
+    <g transform="translate(778 454)">
+      <rect width="350" height="116" rx="20" fill="#ffffff" stroke="#d8ccb9" stroke-width="2"/>
+      <circle cx="34" cy="36" r="11" fill="#82b6d6"/>
+      <text x="58" y="42" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="800" fill="#28231f">以 RAW 为准</text>
+      <text x="58" y="72" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" fill="#7d7469">删除没有对应 RAW 的 JPG</text>
+      <rect x="250" y="35" width="62" height="32" rx="10" fill="#e0eff8"/>
+      <text x="281" y="56" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800" fill="#5787c6">JPG</text>
+    </g>
+
+    <rect x="946" y="592" width="182" height="44" rx="13" fill="#4f7b52"/>
+    <text x="1037" y="620" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="800" fill="#ffffff">开始扫描</text>
+  </g>
+</svg>
