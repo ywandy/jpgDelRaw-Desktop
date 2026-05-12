@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("rawPairCleaner", {
   getUpdateState: () => ipcRenderer.invoke("updates:state"),
   checkForUpdates: () => ipcRenderer.invoke("updates:check"),
   downloadUpdate: () => ipcRenderer.invoke("updates:download"),
+  downloadAndInstallUpdate: () => ipcRenderer.invoke("updates:download-and-install"),
   installUpdate: () => ipcRenderer.invoke("updates:install"),
   onUpdateProgress: (callback: (progress: UpdateProgress) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, progress: UpdateProgress) => callback(progress);

@@ -29,6 +29,9 @@
       "icon": "build/icon.icns",
       "publish": null
     },
+    "dmg": {
+      "writeUpdateInfo": false
+    },
     "win": {
       "target": [
         "nsis"
@@ -75,6 +78,7 @@
     "react-dom": "latest"
   },
   "devDependencies": {
+    "@electron/asar": "^4.2.0",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",

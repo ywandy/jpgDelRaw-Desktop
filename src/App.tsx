@@ -243,31 +243,16 @@ export default function App() {
   async function downloadUpdate(): Promise<void> {
     if (!updateInfo) return;
     if (scanning || deleting || confirmOpen) {
-      setUpdateState({ status: "error", info: updateInfo, error: "请等待当前扫描或删除操作完成后再下载更新。" });
+      setUpdateState({ status: "error", info: updateInfo, error: "请等待当前扫描或删除操作完成后再下载并重启更新。" });
       return;
     }
 
     setUpdateState({ status: "downloading", info: updateInfo, downloaded: 0 });
     try {
-      await api.downloadUpdate();
-      setUpdateState({ status: "ready", info: updateInfo });
+      await api.downloadAndInstallUpdate();
+      setUpdateState({ status: "installing", info: updateInfo });
     } catch (downloadError) {
       setUpdateState({ status: "error", info: updateInfo, error: getErrorMessage(downloadError) });
-    }
-  }
-
-  async function installUpdate(): Promise<void> {
-    if (!updateInfo) return;
-    if (scanning || deleting || confirmOpen) {
-      setUpdateState({ status: "error", info: updateInfo, error: "请等待当前扫描或删除操作完成后再重启安装。" });
-      return;
-    }
-
-    setUpdateState({ status: "installing", info: updateInfo });
-    try {
-      await api.installUpdate();
-    } catch (installError) {
-      setUpdateState({ status: "error", info: updateInfo, error: getErrorMessage(installError) });
     }
   }
 
@@ -279,7 +264,6 @@ export default function App() {
         state={updateState}
         onCancel={() => setUpdateDialogOpen(false)}
         onDownload={() => void downloadUpdate()}
-        onInstall={() => void installUpdate()}
       />
       {currentPage === "home" && (
         <HomePage

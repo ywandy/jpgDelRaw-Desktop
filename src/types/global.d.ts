@@ -27,6 +27,7 @@ declare global {
       getUpdateState: () => Promise<UpdateState>;
       checkForUpdates: () => Promise<UpdateCheckResult>;
       downloadUpdate: () => Promise<void>;
+      downloadAndInstallUpdate: () => Promise<void>;
       installUpdate: () => Promise<void>;
       onUpdateProgress: (callback: (progress: UpdateProgress) => void) => () => void;
       windowMinimize: () => Promise<void>;

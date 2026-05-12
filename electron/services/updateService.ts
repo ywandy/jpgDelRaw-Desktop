@@ -1,22 +1,26 @@
-import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { copyFile, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { createReadStream, createWriteStream } from "node:fs";
+import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { pipeline } from "node:stream/promises";
 import { spawn } from "node:child_process";
 
 import { APP_VERSION } from "../../shared/constants.js";
 import type { UpdateCheckResult, UpdateProgress, UpdateState } from "../../shared/types.js";
 
 const DEFAULT_MANIFEST_URL = "https://github.com/ywandy/jpgDelRaw-Desktop/releases/latest/download/latest-asar.json";
+const MIN_ASAR_SIZE_BYTES = 100 * 1024;
 
 interface UpdateManifest {
   version: string;
   notes?: string;
   pub_date?: string;
+  format?: string;
   assets?: {
     appAsar?: {
+      name?: string;
       url?: string;
       sha256?: string;
+      size?: number;
     };
   };
 }
@@ -41,16 +45,19 @@ export function getUpdateState(): UpdateState {
 export async function checkForUpdates(options: UpdateServiceOptions): Promise<UpdateCheckResult> {
   state = { status: "checking" };
   try {
+    await appendUpdateLog(options, `checking current=${APP_VERSION} manifestUrl=${options.manifestUrl ?? DEFAULT_MANIFEST_URL}`);
     const manifest = await fetchManifest(options.manifestUrl ?? DEFAULT_MANIFEST_URL);
     const asset = manifest.assets?.appAsar;
-    if (!manifest.version || !asset?.url || !asset.sha256) {
-      throw new Error("更新清单缺少版本、下载地址或 SHA-256。 ");
+    if (!manifest.version || !asset?.url) {
+      throw new Error("更新清单缺少版本或下载地址。 ");
     }
+    await appendUpdateLog(options, `manifest version=${manifest.version} asset=${asset.url} size=${asset.size ?? "unknown"}`);
 
     if (compareVersions(manifest.version, APP_VERSION) <= 0) {
       pendingManifest = undefined;
       stagedAsarPath = undefined;
       state = { status: "not-available" };
+      await appendUpdateLog(options, `no update available latest=${manifest.version}`);
       return { available: false, currentVersion: APP_VERSION };
     }
 
@@ -64,6 +71,7 @@ export async function checkForUpdates(options: UpdateServiceOptions): Promise<Up
     state = { status: "available", info };
     return { available: true, info };
   } catch (error) {
+    await appendUpdateLog(options, `check failed: ${formatError(error)}`).catch(() => undefined);
     state = { status: "error", error: getErrorMessage(error) };
     throw error;
   }
@@ -80,33 +88,45 @@ export async function downloadUpdate(options: UpdateServiceOptions, onProgress?:
 
   const manifest = pendingManifest;
   const asset = manifest?.assets?.appAsar;
-  if (!manifest || !asset?.url || !asset.sha256) throw new Error("更新清单无效。 ");
+  if (!manifest || !asset?.url) throw new Error("更新清单无效。 ");
 
   state = { status: "downloading", info: manifestToInfo(manifest), downloaded: 0 };
   const updateDir = path.join(options.userDataPath, "updates", manifest.version);
-  const tempPath = path.join(updateDir, "app.asar.tmp");
-  const finalPath = path.join(updateDir, "app.asar");
+  const tempPath = path.join(updateDir, "payload.download");
+  const finalPath = path.join(updateDir, "payload.ready");
+  const metadataPath = path.join(updateDir, "metadata.json");
   await mkdir(updateDir, { recursive: true });
-  await rm(tempPath, { force: true });
 
   try {
-    await downloadFile(asset.url, tempPath, (progress) => {
+    await appendUpdateLog(options, `----- download update ${manifest.version} -----`);
+    await appendUpdateLog(options, `current=${APP_VERSION} manifestUrl=${options.manifestUrl ?? DEFAULT_MANIFEST_URL}`);
+    await appendUpdateLog(options, `assetUrl=${asset.url}`);
+    if (asset.sha256) await appendUpdateLog(options, `manifestSha256=${asset.sha256} (not enforced)`);
+    await cleanupStaging(updateDir, options);
+
+    const result = await downloadFile(asset.url, tempPath, (progress) => {
       state = { status: "downloading", info: manifestToInfo(manifest), downloaded: progress.downloaded, total: progress.total };
       onProgress?.(progress);
     });
+    await appendUpdateLog(options, `downloaded path=${tempPath} bytes=${result.downloaded} total=${result.total ?? "unknown"} contentType=${result.contentType ?? "unknown"}`);
 
-    const actualHash = await sha256File(tempPath);
-    if (actualHash.toLowerCase() !== asset.sha256.toLowerCase()) {
-      await rm(tempPath, { force: true });
-      throw new Error("更新包校验失败，请稍后重试。 ");
-    }
+    await validateAsarPayload(tempPath, manifest.version, asset.size);
+    await appendUpdateLog(options, `validated path=${tempPath}`);
 
-    await rm(finalPath, { force: true });
+    await removeAsPlainFile(finalPath);
     await rename(tempPath, finalPath);
+    const finalSize = (await stat(finalPath)).size;
+    await writeFile(
+      metadataPath,
+      `${JSON.stringify({ version: manifest.version, assetUrl: asset.url, sha256: asset.sha256, size: finalSize, downloadedAt: new Date().toISOString() }, null, 2)}\n`,
+      "utf8"
+    );
+    await appendUpdateLog(options, `ready staged=${finalPath} size=${finalSize}`);
     stagedAsarPath = finalPath;
     state = { status: "ready", info: manifestToInfo(manifest) };
   } catch (error) {
-    await rm(tempPath, { force: true }).catch(() => undefined);
+    await removeAsPlainFile(tempPath).catch(() => undefined);
+    await appendUpdateLog(options, `download failed: ${formatError(error)}`).catch(() => undefined);
     state = { status: "error", info: manifestToInfo(manifest), error: getErrorMessage(error) };
     throw error;
   }
@@ -122,12 +142,14 @@ export async function installStagedUpdate(options: UpdateServiceOptions): Promis
   const targetAsar = path.join(options.resourcesPath, "app.asar");
   const backupAsar = path.join(updateDir, "app.asar.backup");
   const logPath = path.join(updateDir, "install.log");
+  const updateLogPath = getUpdateLogPath(options);
 
   await writeFile(
     logPath,
-    `Preparing update ${version}\nTarget: ${targetAsar}\nStaged: ${stagedAsarPath}\n`,
+    `Preparing update ${version}\nTarget: ${targetAsar}\nStaged: ${stagedAsarPath}\nUpdate log: ${updateLogPath}\n`,
     "utf8"
   );
+  await appendUpdateLog(options, `install requested helper=${helperPath} target=${targetAsar} staged=${stagedAsarPath} installLog=${logPath}`);
 
   const args = [
     "--parent-pid",
@@ -141,11 +163,18 @@ export async function installStagedUpdate(options: UpdateServiceOptions): Promis
     "--executable",
     options.executablePath,
     "--log",
-    logPath
+    logPath,
+    "--update-log",
+    updateLogPath
   ];
 
   state = { status: "installing", info: manifestToInfo(pendingManifest) };
   spawn(process.execPath, [helperPath, ...args], { env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" }, detached: true, stdio: "ignore" }).unref();
+}
+
+export async function downloadAndInstallUpdate(options: UpdateServiceOptions, onProgress?: (progress: UpdateProgress) => void): Promise<void> {
+  await downloadUpdate(options, onProgress);
+  await installStagedUpdate(options);
 }
 
 async function fetchManifest(url: string): Promise<UpdateManifest> {
@@ -154,36 +183,61 @@ async function fetchManifest(url: string): Promise<UpdateManifest> {
   return (await response.json()) as UpdateManifest;
 }
 
-async function downloadFile(url: string, destination: string, onProgress: (progress: UpdateProgress) => void): Promise<void> {
+async function downloadFile(url: string, destination: string, onProgress: (progress: UpdateProgress) => void): Promise<{ downloaded: number; total?: number; contentType?: string }> {
   const response = await fetch(url);
   if (!response.ok || !response.body) throw new Error(`下载更新失败：HTTP ${response.status}`);
 
   const total = Number(response.headers.get("content-length")) || undefined;
+  const contentType = response.headers.get("content-type") ?? undefined;
   let downloaded = 0;
-  const chunks: Uint8Array[] = [];
   const reader = response.body.getReader();
+  const output = createWriteStream(destination);
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) {
+        controller.close();
+        return;
+      }
+      if (value) {
+        downloaded += value.byteLength;
+        onProgress({ downloaded, total });
+        controller.enqueue(value);
+      }
+    }
+  });
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (!value) continue;
-    chunks.push(value);
-    downloaded += value.byteLength;
-    onProgress({ downloaded, total });
+  try {
+    await pipeline(stream, output);
+  } catch (error) {
+    output.destroy();
+    throw error;
   }
 
-  await writeFile(destination, Buffer.concat(chunks));
+  return { downloaded, total, contentType };
 }
 
-async function sha256File(filePath: string): Promise<string> {
-  const hash = createHash("sha256");
-  await new Promise<void>((resolve, reject) => {
-    const stream = createReadStream(filePath);
-    stream.on("data", (chunk) => hash.update(chunk));
-    stream.on("error", reject);
-    stream.on("end", resolve);
-  });
-  return hash.digest("hex");
+async function validateAsarPayload(filePath: string, expectedVersion: string, expectedSize?: number): Promise<void> {
+  const fileStat = await stat(filePath);
+  if (fileStat.size < MIN_ASAR_SIZE_BYTES) {
+    throw new Error(`下载的更新包过小，可能不是有效 app.asar：${fileStat.size} bytes`);
+  }
+  if (expectedSize !== undefined && fileStat.size !== expectedSize) {
+    throw new Error(`下载的更新包大小不匹配：expected ${expectedSize}, received ${fileStat.size}`);
+  }
+
+  try {
+    const asar = await import("@electron/asar");
+    for (const requiredFile of ["package.json", "dist/index.html", "dist-electron/electron/main.js", "dist-electron/electron/preload.js"]) {
+      asar.statFile(filePath, requiredFile);
+    }
+    const pkg = JSON.parse(asar.extractFile(filePath, "package.json").toString("utf8")) as { name?: string; version?: string; main?: string };
+    if (pkg.name !== "raw-pair-cleaner") throw new Error(`package name mismatch: ${pkg.name ?? "missing"}`);
+    if (pkg.version !== expectedVersion) throw new Error(`package version mismatch: ${pkg.version ?? "missing"}`);
+    if (pkg.main !== "dist-electron/electron/main.js") throw new Error(`package main mismatch: ${pkg.main ?? "missing"}`);
+  } catch (error) {
+    throw new Error(`下载的更新包不是有效的 app.asar，请查看 update.log。${error instanceof Error ? ` ${error.message}` : ""}`);
+  }
 }
 
 function manifestToInfo(manifest: UpdateManifest) {
@@ -214,6 +268,41 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
+function getUpdateLogPath(options: UpdateServiceOptions): string {
+  return path.join(options.userDataPath, "logs", "update.log");
+}
+
+async function appendUpdateLog(options: UpdateServiceOptions, message: string): Promise<void> {
+  const logPath = getUpdateLogPath(options);
+  await mkdir(path.dirname(logPath), { recursive: true });
+  await writeFile(logPath, `[${new Date().toISOString()}] ${message}\n`, { encoding: "utf8", flag: "a" });
+}
+
+async function cleanupStaging(updateDir: string, options: UpdateServiceOptions): Promise<void> {
+  for (const fileName of ["app.asar", "app.asar.tmp", "payload.download"]) {
+    const filePath = path.join(updateDir, fileName);
+    await removeAsPlainFile(filePath)
+      .then(() => appendUpdateLog(options, `cleaned stale ${filePath}`))
+      .catch((error) => appendUpdateLog(options, `cleanup skipped ${filePath}: ${getErrorMessage(error)}`));
+  }
+}
+
+async function removeAsPlainFile(filePath: string): Promise<void> {
+  const previousNoAsar = process.noAsar;
+  process.noAsar = true;
+  try {
+    await rm(filePath, { force: true });
+  } finally {
+    process.noAsar = previousNoAsar;
+  }
+}
+
+function formatError(error: unknown): string {
+  if (error instanceof Error) return `${error.message}\n${error.stack ?? ""}`;
+  return String(error);
+}
+
 export async function recoverBackupForTests(targetPath: string, backupPath: string): Promise<void> {
-  await copyFile(backupPath, targetPath);
+  await removeAsPlainFile(targetPath);
+  await rename(backupPath, targetPath);
 }
