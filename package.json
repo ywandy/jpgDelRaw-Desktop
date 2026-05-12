@@ -50,7 +50,12 @@
         "to": "updater/updater-helper.mjs"
       }
     ],
-    "publish": null
+    "publish": null,
+    "electronLanguages": [
+      "en",
+      "en-US",
+      "zh-CN"
+    ]
   },
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"tsc -p tsconfig.node.json --watch --preserveWatchOutput\" \"wait-on http://127.0.0.1:5173 dist-electron/electron/main.js && electron .\"",
