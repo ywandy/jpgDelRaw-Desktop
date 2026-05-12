@@ -1,5 +1,5 @@
 import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { spawn } from "node:child_process";
@@ -227,16 +227,74 @@ async function validateAsarPayload(filePath: string, expectedVersion: string, ex
   }
 
   try {
-    const asar = await import("@electron/asar");
+    const header = await readAsarHeader(filePath);
     for (const requiredFile of ["package.json", "dist/index.html", "dist-electron/electron/main.js", "dist-electron/electron/preload.js"]) {
-      asar.statFile(filePath, requiredFile);
+      if (!getAsarEntry(header.files, requiredFile)) throw new Error(`missing ${requiredFile}`);
     }
-    const pkg = JSON.parse(asar.extractFile(filePath, "package.json").toString("utf8")) as { name?: string; version?: string; main?: string };
+    const packageEntry = getAsarEntry(header.files, "package.json");
+    if (!packageEntry) throw new Error("missing package.json");
+    const pkg = JSON.parse((await extractAsarFile(filePath, packageEntry)).toString("utf8")) as { name?: string; version?: string; main?: string };
     if (pkg.name !== "raw-pair-cleaner") throw new Error(`package name mismatch: ${pkg.name ?? "missing"}`);
     if (pkg.version !== expectedVersion) throw new Error(`package version mismatch: ${pkg.version ?? "missing"}`);
     if (pkg.main !== "dist-electron/electron/main.js") throw new Error(`package main mismatch: ${pkg.main ?? "missing"}`);
   } catch (error) {
     throw new Error(`下载的更新包不是有效的 app.asar，请查看 update.log。${error instanceof Error ? ` ${error.message}` : ""}`);
+  }
+}
+
+interface AsarEntry {
+  files?: Record<string, AsarEntry>;
+  offset?: string;
+  size?: number;
+  unpacked?: boolean;
+}
+
+interface AsarHeader {
+  files: Record<string, AsarEntry>;
+  headerSize: number;
+}
+
+async function readAsarHeader(filePath: string): Promise<AsarHeader> {
+  const handle = await open(filePath, "r");
+  try {
+    const sizeBuffer = Buffer.alloc(8);
+    await handle.read(sizeBuffer, 0, sizeBuffer.length, 0);
+    const headerSize = sizeBuffer.readUInt32LE(4);
+    if (!Number.isFinite(headerSize) || headerSize <= 0 || headerSize > 50 * 1024 * 1024) {
+      throw new Error(`invalid asar header size: ${headerSize}`);
+    }
+
+    const headerBuffer = Buffer.alloc(headerSize);
+    await handle.read(headerBuffer, 0, headerSize, 8);
+    const header = JSON.parse(headerBuffer.toString("utf8")) as { files?: Record<string, AsarEntry> };
+    if (!header.files) throw new Error("asar header missing files");
+    return { files: header.files, headerSize };
+  } finally {
+    await handle.close();
+  }
+}
+
+function getAsarEntry(files: Record<string, AsarEntry>, entryPath: string): AsarEntry | undefined {
+  return entryPath.split("/").filter(Boolean).reduce<AsarEntry | undefined>((current, part) => current?.files?.[part], { files });
+}
+
+async function extractAsarFile(filePath: string, entry: AsarEntry): Promise<Buffer> {
+  if (entry.files || entry.offset === undefined || entry.size === undefined) {
+    throw new Error("asar entry is not a file");
+  }
+  if (entry.unpacked) throw new Error("asar unpacked entries are not supported for update validation");
+
+  const header = await readAsarHeader(filePath);
+  const offset = 8 + header.headerSize + Number.parseInt(entry.offset, 10);
+  if (!Number.isFinite(offset)) throw new Error(`invalid asar entry offset: ${entry.offset}`);
+
+  const handle = await open(filePath, "r");
+  try {
+    const buffer = Buffer.alloc(entry.size);
+    await handle.read(buffer, 0, entry.size, offset);
+    return buffer;
+  } finally {
+    await handle.close();
   }
 }
 
