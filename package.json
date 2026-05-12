@@ -1,40 +1,82 @@
 {
   "name": "raw-pair-cleaner",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "RAW Pair Cleaner / 底片清理器",
   "author": {
     "name": "ywandy",
     "email": "ywandy@users.noreply.github.com"
   },
+  "main": "dist-electron/electron/main.js",
+  "build": {
+    "appId": "com.ywandy.rawpaircleaner",
+    "productName": "RAW Pair Cleaner",
+    "directories": {
+      "output": "release"
+    },
+    "asar": true,
+    "compression": "maximum",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.photography",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Graphics",
+      "icon": "build/icon.png"
+    },
+    "extraResources": [
+      {
+        "from": "scripts/updater-helper.mjs",
+        "to": "updater/updater-helper.mjs"
+      }
+    ]
+  },
   "scripts": {
-    "dev": "tauri dev",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
-    "dist": "tauri build --bundles dmg",
-    "start": "tauri dev",
+    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"tsc -p tsconfig.node.json --watch --preserveWatchOutput\" \"wait-on http://127.0.0.1:5173 dist-electron/electron/main.js && electron .\"",
+    "build": "tsc -p tsconfig.node.json && tsc -p tsconfig.json --noEmit && vite build",
+    "dist": "pnpm build && electron-builder --publish never",
+    "dist:dir": "pnpm build && electron-builder --dir",
+    "start": "electron .",
     "test": "vitest run",
-    "version:check": "node scripts/check-version.mjs"
+    "version:check": "node scripts/check-version.mjs",
+    "manifest:asar": "node scripts/generate-asar-manifest.mjs"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.11.0",
-    "@tauri-apps/plugin-dialog": "^2.7.1",
-    "@tauri-apps/plugin-os": "^2.3.2",
-    "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-updater": "^2.10.1",
     "@vitejs/plugin-react": "latest",
     "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.1",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "autoprefixer": "^10.4.20",
+    "concurrently": "latest",
+    "electron": "latest",
+    "electron-builder": "^26.8.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "latest",
     "vite": "latest",
-    "vitest": "latest"
+    "vitest": "latest",
+    "wait-on": "latest"
   }
 }

@@ -1,87 +1,35 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, test } from "vitest";
 
-import { APP_WINDOW_BOUNDS } from "../shared/constants";
+import { compareFiles } from "../electron/services/compareService";
+import { scanDirectory } from "../electron/services/scanService";
+import { getSettings, saveSettings } from "../electron/services/settingsService";
+import { moveFilesToTrash } from "../electron/services/trashService";
+import { APP_WINDOW_BOUNDS, DEFAULT_SETTINGS } from "../shared/constants";
 import { getFileKey, getMediaKind } from "../shared/fileUtils";
-import type { CompareConflictReason, CompareResult, DeleteMode, MediaFile, ScanResult } from "../shared/types";
+import type { DeleteContext, MediaFile, ScanResult } from "../shared/types";
+
+async function withTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "raw-pair-cleaner-"));
+  try {
+    return await fn(dir);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
 
 function mediaFile(name: string, kind: MediaFile["kind"], size = 10): MediaFile {
-  const ext = name.includes(".") ? `.${name.split(".").pop() ?? ""}`.toLowerCase() : "";
-
   return {
-    path: `/photos/${kind}/${name}`,
+    path: path.join("/photos", kind, name),
     name,
-    ext,
+    ext: path.extname(name).toLowerCase(),
     key: getFileKey(name),
     kind,
     size,
     modifiedAt: 1
   };
-}
-
-function compareFiles(scanResult: ScanResult, mode: DeleteMode): CompareResult {
-  const imageGroups = groupByKey(scanResult.imageFiles);
-  const rawGroups = groupByKey(scanResult.rawFiles);
-  const keys = new Set([...imageGroups.keys(), ...rawGroups.keys()]);
-  const matchedPairs: CompareResult["matchedPairs"] = [];
-  const conflicts: CompareResult["conflicts"] = [];
-  const deleteCandidates: MediaFile[] = [];
-
-  for (const key of keys) {
-    const images = imageGroups.get(key) ?? [];
-    const raws = rawGroups.get(key) ?? [];
-    const conflictReason = getConflictReason(images, raws);
-
-    if (conflictReason) {
-      conflicts.push({ key, reason: conflictReason, files: [...images, ...raws] });
-      continue;
-    }
-
-    const image = images[0];
-    const raw = raws[0];
-
-    if (image && raw) {
-      matchedPairs.push({ key, image, raw });
-      continue;
-    }
-
-    if (mode === "jpg_as_source_delete_raw" && raw && !image) {
-      deleteCandidates.push(raw);
-    }
-
-    if (mode === "raw_as_source_delete_jpg" && image && !raw) {
-      deleteCandidates.push(image);
-    }
-  }
-
-  return {
-    mode,
-    directoryMode: scanResult.directoryMode,
-    imageFiles: scanResult.imageFiles,
-    rawFiles: scanResult.rawFiles,
-    matchedPairs,
-    deleteCandidates,
-    conflicts,
-    totalDeleteSize: deleteCandidates.reduce((total, file) => total + file.size, 0)
-  };
-}
-
-function groupByKey(files: MediaFile[]): Map<string, MediaFile[]> {
-  const groups = new Map<string, MediaFile[]>();
-
-  for (const file of files) {
-    const current = groups.get(file.key) ?? [];
-    current.push(file);
-    groups.set(file.key, current);
-  }
-
-  return groups;
-}
-
-function getConflictReason(images: MediaFile[], raws: MediaFile[]): CompareConflictReason | undefined {
-  if (images.length > 1 && raws.length > 1) return "ambiguous_match";
-  if (images.length > 1) return "duplicate_image";
-  if (raws.length > 1) return "duplicate_raw";
-  return undefined;
 }
 
 describe("shared file utilities", () => {
@@ -104,6 +52,51 @@ describe("app window bounds", () => {
     expect(APP_WINDOW_BOUNDS.minWidth).toBe(1200);
     expect(APP_WINDOW_BOUNDS.height).toBe(820);
     expect(APP_WINDOW_BOUNDS.minHeight).toBe(720);
+  });
+});
+
+describe("scanDirectory", () => {
+  test("detects separate JPG and RAW directories and skips hidden files by default", async () => {
+    await withTempDir(async (root) => {
+      await mkdir(path.join(root, "JPG"));
+      await mkdir(path.join(root, "RAW"));
+      await writeFile(path.join(root, "JPG", "IMG_0001.JPG"), "");
+      await writeFile(path.join(root, "JPG", ".hidden.jpg"), "");
+      await writeFile(path.join(root, "RAW", "IMG_0001.CR3"), "raw");
+      await writeFile(path.join(root, "RAW", "IMG_0002.CR3"), "rawraw");
+
+      const result = await scanDirectory(root, {
+        recursive: true,
+        includeHiddenFiles: false,
+        ignoreCase: true
+      });
+
+      expect(result.directoryMode).toBe("separate_dirs");
+      expect(result.imageFiles.map((file) => file.name)).toEqual(["IMG_0001.JPG"]);
+      expect(result.rawFiles).toHaveLength(2);
+      expect(result.jpgDirectory).toBe(path.join(root, "JPG"));
+      expect(result.rawDirectory).toBe(path.join(root, "RAW"));
+    });
+  });
+
+  test("detects separate directory mode from root folder names before media counts", async () => {
+    await withTempDir(async (root) => {
+      await mkdir(path.join(root, "JPG"));
+      await mkdir(path.join(root, "RAW"));
+      await writeFile(path.join(root, "JPG", "IMG_0001.JPG"), "");
+
+      const result = await scanDirectory(root, {
+        recursive: true,
+        includeHiddenFiles: false,
+        ignoreCase: true
+      });
+
+      expect(result.directoryMode).toBe("separate_dirs");
+      expect(result.imageFiles).toHaveLength(1);
+      expect(result.rawFiles).toHaveLength(0);
+      expect(result.jpgDirectory).toBe(path.join(root, "JPG"));
+      expect(result.rawDirectory).toBe(path.join(root, "RAW"));
+    });
   });
 });
 
@@ -136,5 +129,78 @@ describe("compareFiles", () => {
         files: [duplicateA, duplicateB]
       }
     ]);
+  });
+});
+
+describe("moveFilesToTrash", () => {
+  test("moves selected files through injected trash function and writes a JSON log", async () => {
+    await withTempDir(async (userDataPath) => {
+      const trashed: string[] = [];
+      const files = [mediaFile("IMG_0100.CR3", "raw", 512)];
+      const context: DeleteContext = {
+        mode: "jpg_as_source_delete_raw",
+        rootPath: "/photos"
+      };
+
+      const result = await moveFilesToTrash(files, context, {
+        userDataPath,
+        trashItem: async (filePath) => {
+          trashed.push(filePath);
+        },
+        generateLog: true,
+        now: () => new Date("2026-05-09T10:30:00.000Z")
+      });
+
+      expect(trashed).toEqual([files[0].path]);
+      expect(result.success).toBe(1);
+      expect(result.failed).toBe(0);
+      expect(result.logPath).toBe(path.join(userDataPath, "logs", "delete-log-2026-05-09-10-30-00.json"));
+    });
+  });
+});
+
+describe("settingsService", () => {
+  test("fills default appearance settings when reading an older settings file", async () => {
+    await withTempDir(async (userDataPath) => {
+      await writeFile(
+        path.join(userDataPath, "settings.json"),
+        JSON.stringify({
+          scan: {
+            recursive: false,
+            includeHiddenFiles: true,
+            ignoreCase: false
+          },
+          delete: {
+            requireConfirmText: false,
+            generateLog: false
+          }
+        }),
+        "utf8"
+      );
+
+      const settings = await getSettings(userDataPath);
+
+      expect(settings.appearance).toEqual({ fontScale: "medium" });
+      expect(settings.scan.recursive).toBe(false);
+      expect(settings.delete.generateLog).toBe(false);
+    });
+  });
+
+  test("persists selected font scale when saving settings", async () => {
+    await withTempDir(async (userDataPath) => {
+      await saveSettings(
+        {
+          ...DEFAULT_SETTINGS,
+          appearance: {
+            fontScale: "large"
+          }
+        },
+        userDataPath
+      );
+
+      const settings = await getSettings(userDataPath);
+
+      expect(settings.appearance.fontScale).toBe("large");
+    });
   });
 });

@@ -1,19 +1,18 @@
 import { Camera, CheckCircle2, RefreshCw } from "lucide-react";
 
 import { APP_TITLE, APP_VERSION } from "../../shared/constants";
-import type { UpdateInfo } from "../lib/updater";
+import type { UpdateInfo, UpdateState } from "../../shared/types";
 
 interface AboutPageProps {
   updateInfo?: UpdateInfo;
-  updateStatus?: "idle" | "checking" | "available" | "not-available" | "downloading" | "ready" | "error";
-  updateError?: string;
+  updateState: UpdateState;
   onCheckUpdate: () => void;
   onShowUpdate: () => void;
 }
 
-export function AboutPage({ updateInfo, updateStatus = "idle", updateError, onCheckUpdate, onShowUpdate }: AboutPageProps) {
+export function AboutPage({ updateInfo, updateState, onCheckUpdate, onShowUpdate }: AboutPageProps) {
   const capabilities = ["JPG / RAW 文件匹配", "多余文件识别", "移动到系统回收站", "删除日志记录"];
-  const checking = updateStatus === "checking";
+  const checking = updateState.status === "checking";
 
   return (
     <div className="flex min-h-full w-full flex-col items-center justify-center space-y-6 py-12 text-center">
@@ -30,7 +29,7 @@ export function AboutPage({ updateInfo, updateStatus = "idle", updateError, onCh
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="type-card-title text-slate-950">应用更新</div>
-            <div className="type-body mt-1 text-slate-500">{getUpdateMessage(updateStatus, updateInfo, updateError)}</div>
+            <div className="type-body mt-1 text-slate-500">{getUpdateMessage(updateState, updateInfo)}</div>
           </div>
           <div className="flex gap-3">
             {updateInfo && (
@@ -40,7 +39,7 @@ export function AboutPage({ updateInfo, updateStatus = "idle", updateError, onCh
             )}
             <button
               className="type-ui inline-flex items-center gap-2 rounded-xl bg-[#2f688b] px-4 py-2 text-white transition hover:bg-[#255774] disabled:cursor-not-allowed disabled:bg-[#9bb8c8]"
-              disabled={checking || updateStatus === "downloading"}
+              disabled={checking || updateState.status === "downloading" || updateState.status === "installing"}
               onClick={onCheckUpdate}
             >
               <RefreshCw className={`h-4 w-4 ${checking ? "animate-spin" : ""}`} />
@@ -62,12 +61,12 @@ export function AboutPage({ updateInfo, updateStatus = "idle", updateError, onCh
   );
 }
 
-function getUpdateMessage(status: AboutPageProps["updateStatus"], info?: UpdateInfo, error?: string): string {
-  if (status === "checking") return "正在检查是否有新版本。";
-  if (status === "available" && info) return `发现新版本 ${info.version}，可下载并安装。`;
-  if (status === "downloading") return "正在下载并安装更新，请稍候。";
-  if (status === "ready") return "更新已安装，重启应用后生效。";
-  if (status === "not-available") return "当前已是最新版本。";
-  if (status === "error") return error || "检查更新失败，请稍后重试。";
+function getUpdateMessage(state: UpdateState, info?: UpdateInfo): string {
+  if (state.status === "checking") return "正在检查是否有新版本。";
+  if (state.status === "available" && info) return `发现新版本 ${info.version}，可下载并安装。`;
+  if (state.status === "downloading") return "正在下载更新，请稍候。";
+  if (state.status === "ready") return "更新已下载，重启应用后生效。";
+  if (state.status === "not-available") return "当前已是最新版本。";
+  if (state.status === "error") return state.error || "检查更新失败，请稍后重试。";
   return "可手动检查更新；启动自动检查可在设置中调整。";
 }

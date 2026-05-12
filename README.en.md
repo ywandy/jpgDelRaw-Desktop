@@ -1,7 +1,7 @@
 # RAW Pair Cleaner / 底片清理器
 
 <p align="center">
-  <img src="src-tauri/icons/icon.png" width="112" height="112" alt="RAW Pair Cleaner icon" />
+  <img src="build/icon.png" width="112" height="112" alt="RAW Pair Cleaner icon" />
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img alt="Tauri" src="https://img.shields.io/badge/Tauri-v2-24C8DB?style=flat-square&logo=tauri&logoColor=white" />
+  <img alt="Electron" src="https://img.shields.io/badge/Electron-desktop-47848F?style=flat-square&logo=electron&logoColor=white" />
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=1f2937" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" />
   <img alt="pnpm" src="https://img.shields.io/badge/pnpm-required-F69220?style=flat-square&logo=pnpm&logoColor=white" />
@@ -40,12 +40,12 @@ The default behavior is intentionally conservative: every pending deletion is sh
 - **Conflict protection**
   - Duplicate JPG keys, duplicate RAW keys, and ambiguous matches are reported as conflicts and excluded from delete candidates.
 - **Trash-first deletion**
-  - Files are moved to the system trash/recycle bin through the Tauri backend.
+  - Files are moved to the system trash/recycle bin through the Electron backend.
   - User photo files are not hard-deleted.
 - **Operation logs**
-  - Optional JSON delete logs are written under the Tauri app data directory.
+  - Optional JSON delete logs are written under the Electron app data directory.
 - **Desktop-focused UI**
-  - Tauri v2 desktop shell, React renderer, custom title bar, sidebar navigation, and desktop-oriented layout.
+  - Electron desktop shell, React renderer, custom title bar, sidebar navigation, and desktop-oriented layout.
 
 ## Workflow
 
@@ -89,16 +89,16 @@ JPG-like files include common image and preview formats such as `.jpg`, `.jpeg`,
 
 RAW files include common camera RAW formats such as `.cr2`, `.cr3`, `.nef`, `.arw`, `.raf`, `.rw2`, `.orf`, `.dng`, `.3fr`, `.iiq`, `.srw`, `.r3d`, and more.
 
-The canonical extension lists live in [`shared/fileExtensions.ts`](shared/fileExtensions.ts) and should stay aligned with the Rust service-side types.
+The canonical extension lists live in [`shared/fileExtensions.ts`](shared/fileExtensions.ts) and should stay aligned with the Node/Electron service-side types.
 
 ## Tech Stack
 
-- [Tauri v2](https://tauri.app/) for the desktop shell and native commands.
+- [Electron](https://www.electronjs.org/) for the desktop shell and native commands.
 - [React](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/) for the renderer.
 - [Vite](https://vite.dev/) for frontend development and builds.
 - [Tailwind CSS](https://tailwindcss.com/) for UI styling.
 - [Vitest](https://vitest.dev/) for the TypeScript test suite.
-- Rust services under `src-tauri/src/services/` for scanning, comparison, trash, logs, and settings.
+- Node/Electron services under `electron/services/` for scanning, comparison, trash, logs, and settings.
 
 ## Getting Started
 
@@ -106,9 +106,9 @@ The canonical extension lists live in [`shared/fileExtensions.ts`](shared/fileEx
 
 - Node.js compatible with the project dependencies.
 - pnpm.
-- Rust and the Tauri system prerequisites for your operating system.
+- Node/Electron and the Electron system prerequisites for your operating system.
 
-See the official Tauri setup guide for platform-specific dependencies: <https://tauri.app/start/prerequisites/>
+See the official Electron setup guide for platform-specific dependencies: <https://www.electronjs.org/start/prerequisites/>
 
 ### Install
 
@@ -122,7 +122,7 @@ pnpm install
 pnpm dev
 ```
 
-This starts the Vite renderer and launches the Tauri desktop app.
+This starts the Vite renderer and launches the Electron desktop app.
 
 ### Build Renderer
 
@@ -159,9 +159,9 @@ pnpm test tests/core.test.ts
 ├── shared/                  # Shared TypeScript types, constants, extensions, and file helpers
 ├── src/                     # React renderer
 │   ├── components/          # Reusable UI components
-│   ├── lib/api.ts           # Renderer facade for Tauri desktop capabilities
+│   ├── lib/api.ts           # Renderer facade for Electron desktop capabilities
 │   └── pages/               # Page-level screens
-├── src-tauri/               # Tauri application shell and Rust backend
+├── electron/               # Electron application shell and Node/Electron backend
 │   ├── icons/               # Generated app icons
 │   ├── src/main.rs          # Command registration and app bootstrap
 │   └── src/services/        # Scanner, compare, trash, log, settings services
@@ -171,14 +171,14 @@ pnpm test tests/core.test.ts
 
 ## Development Notes
 
-- Keep `src/lib/api.ts`, `src-tauri/src/main.rs`, and `src-tauri/src/services/types.rs` in sync when changing the Tauri command surface.
-- Keep file extension constants aligned between `shared/fileExtensions.ts` and the Rust service types.
+- Keep `src/lib/api.ts`, `electron/main.ts`, and `shared/types.ts` in sync when changing the Electron command surface.
+- Keep file extension constants aligned between `shared/fileExtensions.ts` and the Node/Electron service types.
 - There is currently no `lint` script in `package.json`; use `pnpm build` and `pnpm test` as the baseline verification commands.
 - Do not introduce direct filesystem access in the renderer process.
 
 ## Privacy
 
-RAW Pair Cleaner is a local desktop utility. File scanning, comparison, deletion, settings, and logs are handled locally through the Tauri application. The core workflow does not require cloud sync or remote image processing.
+RAW Pair Cleaner is a local desktop utility. File scanning, comparison, deletion, settings, and logs are handled locally through the Electron application. The core workflow does not require cloud sync or remote image processing.
 
 ## Contributing
 
@@ -191,7 +191,7 @@ Contributions are welcome. For a clean change:
 
 ## Roadmap
 
-- Add Rust-side tests for scanner, compare, trash, log, and settings services.
+- Add Node/Electron-side tests for scanner, compare, trash, log, and settings services.
 - Improve conflict explanations and batch review ergonomics.
 - Add optional sidecar handling flows without making sidecar deletion the default.
 - Add release artifacts for more desktop platforms.

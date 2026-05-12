@@ -2,9 +2,7 @@ node_modules/
 dist/
 dist-electron/
 release/
-src-tauri/target/
-src-tauri/keys/
-src-tauri/gen/
+src-tauri/
 .vite/
 .DS_Store
 *.log

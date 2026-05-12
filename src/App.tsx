@@ -1,19 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { DEFAULT_SETTINGS } from "../shared/constants";
-import type { AppSettings, CompareResult, DeleteMode, DeleteResult, PlatformName, ScanResult } from "../shared/types";
+import type { AppSettings, CompareResult, DeleteMode, DeleteResult, PlatformName, ScanResult, UpdateInfo, UpdateProgress, UpdateState } from "../shared/types";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { api } from "./lib/api";
-import { checkForUpdate, downloadAndInstallUpdate, relaunchApp, type UpdateInfo, type UpdateProgress } from "./lib/updater";
 import { AboutPage } from "./pages/AboutPage";
 import { HomePage } from "./pages/HomePage";
 import { PendingDeletePage, selectedMediaFiles } from "./pages/PendingDeletePage";
 import { ScanResultPage } from "./pages/ScanResultPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import type { PageKey } from "./types/navigation";
-
-type UpdateStatus = "idle" | "checking" | "available" | "not-available" | "downloading" | "ready" | "error";
 
 const AUTO_UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -34,13 +31,10 @@ export default function App() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo>();
-  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>("idle");
-  const [updateError, setUpdateError] = useState<string>();
+  const [updateState, setUpdateState] = useState<UpdateState>({ status: "idle" });
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [pendingUpdatePrompt, setPendingUpdatePrompt] = useState(false);
-  const [downloadedUpdateBytes, setDownloadedUpdateBytes] = useState(0);
-  const [updateContentLength, setUpdateContentLength] = useState<number>();
-  const updateBusy = updateStatus === "checking" || updateStatus === "downloading";
+  const updateBusy = updateState.status === "checking" || updateState.status === "downloading" || updateState.status === "installing";
   const appBusyForUpdatePrompt = scanning || deleting || confirmOpen;
 
   useEffect(() => {
@@ -53,6 +47,11 @@ export default function App() {
       .getPlatform()
       .then(setPlatform)
       .catch(() => setPlatform("darwin"));
+
+    const dispose = api.onUpdateProgress((progress) => {
+      setUpdateState((current) => ({ ...current, status: "downloading", downloaded: progress.downloaded, total: progress.total }));
+    });
+    return dispose;
   }, []);
 
   useEffect(() => {
@@ -83,7 +82,8 @@ export default function App() {
     }
   }
 
-  function acceptDroppedPath(filePath: string): void {
+  function acceptDroppedFile(file: File): void {
+    const filePath = api.getPathForFile(file);
     if (!filePath) {
       setError("无法读取拖入目录路径，请点击选择目录。");
       return;
@@ -97,8 +97,8 @@ export default function App() {
       setError("请先选择照片目录。");
       return;
     }
-    if (updateStatus === "downloading") {
-      setError("正在安装更新，请等待完成后再扫描。");
+    if (updateState.status === "downloading" || updateState.status === "installing") {
+      setError("正在处理更新，请等待完成后再扫描。");
       return;
     }
 
@@ -166,8 +166,8 @@ export default function App() {
 
   async function confirmDelete(): Promise<void> {
     if (!compareResult || !scanResult || selectedSize < 0) return;
-    if (updateStatus === "downloading") {
-      setError("正在安装更新，请等待完成后再删除文件。");
+    if (updateState.status === "downloading" || updateState.status === "installing") {
+      setError("正在处理更新，请等待完成后再删除文件。");
       return;
     }
     const files = selectedMediaFiles(compareResult, selectedPaths);
@@ -204,36 +204,32 @@ export default function App() {
 
   async function runUpdateCheck({ manual }: { manual: boolean }): Promise<void> {
     if (updateBusy) return;
-
-    setUpdateStatus("checking");
-    setUpdateError(undefined);
+    setUpdateState({ status: "checking" });
     if (manual) setError(undefined);
 
     try {
-      const result = await checkForUpdate();
+      const result = await api.checkForUpdates();
       const checkedAt = new Date().toISOString();
       await persistUpdateLastCheckedAt(checkedAt);
 
       if (!result.available || !result.info) {
         setUpdateInfo(undefined);
-        setUpdateStatus(manual ? "not-available" : "idle");
+        setUpdateState({ status: manual ? "not-available" : "idle" });
         return;
       }
 
       setUpdateInfo(result.info);
-      setUpdateStatus("available");
+      setUpdateState({ status: "available", info: result.info });
       if (manual || !appBusyForUpdatePrompt) {
         setUpdateDialogOpen(true);
       } else {
         setPendingUpdatePrompt(true);
       }
-    } catch (updateCheckError) {
+    } catch (updateError) {
       if (manual) {
-        const message = getErrorMessage(updateCheckError);
-        setUpdateError(message);
-        setUpdateStatus("error");
+        setUpdateState({ status: "error", error: getErrorMessage(updateError) });
       } else {
-        setUpdateStatus("idle");
+        setUpdateState({ status: "idle" });
       }
     }
   }
@@ -244,48 +240,35 @@ export default function App() {
     await api.saveSettings(nextSettings);
   }
 
+  async function downloadUpdate(): Promise<void> {
+    if (!updateInfo) return;
+    if (scanning || deleting || confirmOpen) {
+      setUpdateState({ status: "error", info: updateInfo, error: "请等待当前扫描或删除操作完成后再下载更新。" });
+      return;
+    }
+
+    setUpdateState({ status: "downloading", info: updateInfo, downloaded: 0 });
+    try {
+      await api.downloadUpdate();
+      setUpdateState({ status: "ready", info: updateInfo });
+    } catch (downloadError) {
+      setUpdateState({ status: "error", info: updateInfo, error: getErrorMessage(downloadError) });
+    }
+  }
+
   async function installUpdate(): Promise<void> {
     if (!updateInfo) return;
     if (scanning || deleting || confirmOpen) {
-      setUpdateError("请等待当前扫描或删除操作完成后再安装更新。");
-      setUpdateStatus("error");
+      setUpdateState({ status: "error", info: updateInfo, error: "请等待当前扫描或删除操作完成后再重启安装。" });
       return;
     }
 
-    setUpdateStatus("downloading");
-    setDownloadedUpdateBytes(0);
-    setUpdateContentLength(undefined);
-    setUpdateError(undefined);
-    setError(undefined);
-
+    setUpdateState({ status: "installing", info: updateInfo });
     try {
-      await downloadAndInstallUpdate(handleUpdateProgress);
-      setUpdateStatus("ready");
-    } catch (updateError) {
-      setUpdateError(getErrorMessage(updateError));
-      setUpdateStatus("error");
+      await api.installUpdate();
+    } catch (installError) {
+      setUpdateState({ status: "error", info: updateInfo, error: getErrorMessage(installError) });
     }
-  }
-
-  function handleUpdateProgress(progress: UpdateProgress): void {
-    if (progress.phase === "started") {
-      setDownloadedUpdateBytes(0);
-      setUpdateContentLength(progress.contentLength);
-    } else if (progress.phase === "progress") {
-      setDownloadedUpdateBytes(progress.downloaded);
-      setUpdateContentLength(progress.contentLength);
-    } else {
-      setUpdateContentLength((current) => current);
-    }
-  }
-
-  async function restartForUpdate(): Promise<void> {
-    if (scanning || deleting || confirmOpen) {
-      setUpdateError("请等待当前扫描或删除操作完成后再重启。");
-      setUpdateStatus("error");
-      return;
-    }
-    await relaunchApp();
   }
 
   return (
@@ -293,13 +276,10 @@ export default function App() {
       <UpdateDialog
         open={updateDialogOpen}
         info={updateInfo}
-        status={updateStatus === "ready" ? "ready" : updateStatus === "downloading" ? "downloading" : updateStatus === "error" ? "error" : "available"}
-        downloaded={downloadedUpdateBytes}
-        contentLength={updateContentLength}
-        error={updateError}
+        state={updateState}
         onCancel={() => setUpdateDialogOpen(false)}
+        onDownload={() => void downloadUpdate()}
         onInstall={() => void installUpdate()}
-        onRelaunch={() => void restartForUpdate()}
       />
       {currentPage === "home" && (
         <HomePage
@@ -309,7 +289,7 @@ export default function App() {
           scanning={scanning}
           onModeChange={setMode}
           onBrowse={() => void browseDirectory()}
-          onDropPath={acceptDroppedPath}
+          onDropFile={acceptDroppedFile}
           onStartScan={() => void startScan()}
         />
       )}
@@ -344,9 +324,8 @@ export default function App() {
         <SettingsPage
           settings={settings}
           saving={savingSettings}
-          updateStatus={updateStatus}
           updateInfo={updateInfo}
-          updateError={updateError}
+          updateState={updateState}
           onSave={(nextSettings) => void saveSettings(nextSettings)}
           onCheckUpdate={() => void runUpdateCheck({ manual: true })}
         />
@@ -354,8 +333,7 @@ export default function App() {
       {currentPage === "about" && (
         <AboutPage
           updateInfo={updateInfo}
-          updateStatus={updateStatus}
-          updateError={updateError}
+          updateState={updateState}
           onCheckUpdate={() => void runUpdateCheck({ manual: true })}
           onShowUpdate={() => setUpdateDialogOpen(true)}
         />

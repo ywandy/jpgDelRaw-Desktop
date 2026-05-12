@@ -12,11 +12,11 @@ interface HomePageProps {
   scanning: boolean;
   onModeChange: (mode: DeleteMode) => void;
   onBrowse: () => void;
-  onDropPath: (path: string) => void;
+  onDropFile: (file: File) => void;
   onStartScan: () => void;
 }
 
-export function HomePage({ rootPath, mode, error, scanning, onModeChange, onBrowse, onDropPath, onStartScan }: HomePageProps) {
+export function HomePage({ rootPath, mode, error, scanning, onModeChange, onBrowse, onDropFile, onStartScan }: HomePageProps) {
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
       <div className="min-h-0 flex-1 overflow-auto pr-1">
@@ -37,7 +37,7 @@ export function HomePage({ rootPath, mode, error, scanning, onModeChange, onBrow
             </WarningPanel>
           )}
 
-          <DropZone rootPath={rootPath} disabled={scanning} onBrowse={onBrowse} onDropPath={onDropPath} />
+          <DropZone rootPath={rootPath} disabled={scanning} onBrowse={onBrowse} onDropFile={onDropFile} />
           <ModeSelector value={mode} onChange={onModeChange} />
         </div>
       </div>

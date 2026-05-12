@@ -89,6 +89,34 @@ export interface UpdateSettings {
   lastCheckedAt?: string;
 }
 
+export interface UpdateInfo {
+  currentVersion: string;
+  version: string;
+  date?: string;
+  body?: string;
+}
+
+export interface UpdateCheckResult {
+  available: boolean;
+  currentVersion?: string;
+  info?: UpdateInfo;
+}
+
+export interface UpdateProgress {
+  downloaded: number;
+  total?: number;
+}
+
+export type UpdateStatus = "idle" | "checking" | "available" | "not-available" | "downloading" | "ready" | "installing" | "error";
+
+export interface UpdateState {
+  status: UpdateStatus;
+  info?: UpdateInfo;
+  downloaded?: number;
+  total?: number;
+  error?: string;
+}
+
 export interface AppSettings {
   appearance: {
     fontScale: FontScale;
