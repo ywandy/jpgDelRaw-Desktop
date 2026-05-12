@@ -9,9 +9,10 @@ interface UpdateDialogProps {
   state: UpdateState;
   onCancel: () => void;
   onDownload: () => void;
+  onInstall: () => void;
 }
 
-export function UpdateDialog({ open, info, state, onCancel, onDownload }: UpdateDialogProps) {
+export function UpdateDialog({ open, info, state, onCancel, onDownload, onInstall }: UpdateDialogProps) {
   if (!open || !info) return null;
 
   const busy = state.status === "downloading" || state.status === "installing";
@@ -60,14 +61,21 @@ export function UpdateDialog({ open, info, state, onCancel, onDownload }: Update
           <button className="type-ui h-11 rounded-xl border border-[#c8d9e3] bg-white px-6 text-[#385469] transition hover:bg-[#f1f7fb] disabled:opacity-60" disabled={busy} onClick={onCancel}>
             稍后
           </button>
-          <button
-            className="type-ui inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f688b] px-6 text-white shadow-sm transition hover:bg-[#255774] disabled:cursor-not-allowed disabled:bg-[#9bb8c8]"
-            disabled={busy || state.status === "ready"}
-            onClick={onDownload}
-          >
-            <DownloadCloud className="h-4 w-4" />
-            {state.status === "ready" ? "即将重启安装" : busy ? "正在更新" : "下载并重启更新"}
-          </button>
+          {state.status === "ready" ? (
+            <button className="type-ui inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f688b] px-6 text-white shadow-sm transition hover:bg-[#255774]" onClick={onInstall}>
+              <DownloadCloud className="h-4 w-4" />
+              重启后生效
+            </button>
+          ) : (
+            <button
+              className="type-ui inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f688b] px-6 text-white shadow-sm transition hover:bg-[#255774] disabled:cursor-not-allowed disabled:bg-[#9bb8c8]"
+              disabled={busy}
+              onClick={onDownload}
+            >
+              <DownloadCloud className="h-4 w-4" />
+              {busy ? "正在下载" : "下载更新"}
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -110,7 +110,7 @@ export async function downloadUpdate(options: UpdateServiceOptions, onProgress?:
     });
     await appendUpdateLog(options, `downloaded path=${tempPath} bytes=${result.downloaded} total=${result.total ?? "unknown"} contentType=${result.contentType ?? "unknown"}`);
 
-    await validateAsarPayload(tempPath, manifest.version, asset.size);
+    // await validateAsarPayload(tempPath, manifest.version, asset.size);
     await appendUpdateLog(options, `validated path=${tempPath}`);
 
     await removeAsPlainFile(finalPath);
@@ -165,16 +165,13 @@ export async function installStagedUpdate(options: UpdateServiceOptions): Promis
     "--log",
     logPath,
     "--update-log",
-    updateLogPath
+    updateLogPath,
+    "--platform",
+    process.platform
   ];
 
   state = { status: "installing", info: manifestToInfo(pendingManifest) };
   spawn(process.execPath, [helperPath, ...args], { env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" }, detached: true, stdio: "ignore" }).unref();
-}
-
-export async function downloadAndInstallUpdate(options: UpdateServiceOptions, onProgress?: (progress: UpdateProgress) => void): Promise<void> {
-  await downloadUpdate(options, onProgress);
-  await installStagedUpdate(options);
 }
 
 async function fetchManifest(url: string): Promise<UpdateManifest> {

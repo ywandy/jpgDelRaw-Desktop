@@ -7,7 +7,7 @@ import { compareFiles } from "./services/compareService.js";
 import { scanDirectory } from "./services/scanService.js";
 import { getSettings, saveSettings } from "./services/settingsService.js";
 import { moveFilesToTrash } from "./services/trashService.js";
-import { checkForUpdates, downloadAndInstallUpdate, downloadUpdate, getUpdateState, installStagedUpdate } from "./services/updateService.js";
+import { checkForUpdates, downloadUpdate, getUpdateState, installStagedUpdate } from "./services/updateService.js";
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL ?? "http://127.0.0.1:5173";
 
@@ -81,11 +81,6 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle("updates:download", async (event) => {
     return downloadUpdate(getUpdateOptions(), (progress) => event.sender.send("updates:progress", progress));
-  });
-
-  ipcMain.handle("updates:download-and-install", async (event) => {
-    await downloadAndInstallUpdate(getUpdateOptions(), (progress) => event.sender.send("updates:progress", progress));
-    app.quit();
   });
 
   ipcMain.handle("updates:install", async () => {

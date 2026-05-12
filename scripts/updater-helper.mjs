@@ -2,14 +2,15 @@
 process.noAsar = true;
 
 import { appendFileSync, copyFileSync, existsSync, renameSync, rmSync, statSync } from "node:fs";
-import path from "node:path";
+import { dirname } from "node:path";
 import { spawn } from "node:child_process";
 
 const args = parseArgs(process.argv.slice(2));
 const logPath = args.log;
 const updateLogPath = args["update-log"];
+const platform = args.platform || process.platform;
 
-log(`Updater helper started for parent ${args["parent-pid"]}`);
+log(`Updater helper started for parent ${args["parent-pid"]} platform=${platform}`);
 await waitForExit(Number(args["parent-pid"]));
 
 try {
@@ -22,20 +23,20 @@ try {
   assertReadablePayload(staged);
   log(`Validated staged payload: ${staged}`);
 
-  rmSync(targetTemp, { force: true });
-  rmSync(backup, { force: true });
-  copyFileSync(staged, targetTemp);
+  retrySync(() => rmSync(targetTemp, { force: true }), "remove old target temp");
+  retrySync(() => rmSync(backup, { force: true }), "remove old backup");
+  retrySync(() => copyFileSync(staged, targetTemp), "copy staged payload beside target");
   log(`Copied staged payload to ${targetTemp}`);
 
   if (existsSync(target)) {
-    copyFileSync(target, backup);
+    retrySync(() => copyFileSync(target, backup), "backup current app.asar");
     log(`Backed up current app.asar to ${backup}`);
   }
 
-  rmSync(target, { force: true });
-  renameSync(targetTemp, target);
+  retrySync(() => rmSync(target, { force: true }), "remove current app.asar");
+  retrySync(() => renameSync(targetTemp, target), "replace app.asar");
   log("app.asar replaced successfully");
-  spawn(executable, [], { detached: true, stdio: "ignore" }).unref();
+  relaunch(executable);
 } catch (error) {
   log(`update failed: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
   try {
@@ -47,7 +48,7 @@ try {
     log(`rollback failed: ${rollbackError instanceof Error ? rollbackError.stack ?? rollbackError.message : String(rollbackError)}`);
   }
   const executable = args.executable;
-  if (executable) spawn(executable, [], { detached: true, stdio: "ignore" }).unref();
+  if (executable) relaunch(executable);
 }
 
 function assertReadablePayload(filePath) {
@@ -55,6 +56,45 @@ function assertReadablePayload(filePath) {
   const stats = statSync(filePath);
   if (!stats.isFile()) throw new Error(`Staged payload is not a file: ${filePath}`);
   if (stats.size < 100 * 1024) throw new Error(`Staged payload is too small: ${stats.size} bytes`);
+}
+
+function retrySync(action, label) {
+  const attempts = platform === "win32" ? 30 : 12;
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      action();
+      if (attempt > 1) log(`${label} succeeded after ${attempt} attempts`);
+      return;
+    } catch (error) {
+      lastError = error;
+      log(`${label} attempt ${attempt}/${attempts} failed: ${error instanceof Error ? error.message : String(error)}`);
+      sleep(platform === "win32" ? 500 : 250);
+    }
+  }
+  throw lastError;
+}
+
+function relaunch(executable) {
+  if (platform === "darwin") {
+    const appBundle = findMacAppBundle(executable);
+    if (appBundle) {
+      log(`Relaunching macOS app bundle: ${appBundle}`);
+      spawn("/usr/bin/open", ["-n", appBundle], { detached: true, stdio: "ignore" }).unref();
+      return;
+    }
+  }
+  log(`Relaunching executable: ${executable}`);
+  spawn(executable, [], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+}
+
+function findMacAppBundle(executable) {
+  let current = dirname(executable);
+  while (current && current !== dirname(current)) {
+    if (current.endsWith(".app")) return current;
+    current = dirname(current);
+  }
+  return undefined;
 }
 
 function parseArgs(values) {
@@ -85,6 +125,10 @@ function waitForExit(pid) {
       }
     }, 500);
   });
+}
+
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 function log(message) {

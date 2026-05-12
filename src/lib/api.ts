@@ -17,7 +17,6 @@ export const api: Window["rawPairCleaner"] =
     getUpdateState: () => Promise.resolve({ status: "idle" }),
     checkForUpdates: () => Promise.resolve({ available: false, currentVersion: "0.0.0" }),
     downloadUpdate: () => missingPreload(),
-    downloadAndInstallUpdate: () => missingPreload(),
     installUpdate: () => missingPreload(),
     onUpdateProgress: () => () => undefined,
     windowMinimize: () => Promise.resolve(),
