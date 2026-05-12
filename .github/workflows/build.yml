@@ -38,8 +38,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Apply tag version
+        run: pnpm version:apply-tag
+
       - name: Check release version
-        if: startsWith(github.ref, 'refs/tags/v')
         run: pnpm version:check
 
       - name: Run tests
@@ -86,6 +88,6 @@ jobs:
             artifacts/**/*.AppImage
             artifacts/**/*.deb
             artifacts/**/*.yml
-            artifacts/**/*.asar
+            artifacts/**/raw-pair-cleaner-*-app.asar
             artifacts/**/latest-asar.json
 

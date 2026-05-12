@@ -60,7 +60,8 @@
     "start": "electron .",
     "test": "vitest run",
     "version:check": "node scripts/check-version.mjs",
-    "manifest:asar": "node scripts/generate-asar-manifest.mjs"
+    "manifest:asar": "node scripts/generate-asar-manifest.mjs",
+    "version:apply-tag": "node scripts/apply-tag-version.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
