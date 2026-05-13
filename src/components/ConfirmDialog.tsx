@@ -22,34 +22,34 @@ export function ConfirmDialog({ open, count, totalSize, mode, requireConfirmText
   const canConfirm = !busy;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d2823]/45 p-6 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-[22px] border border-[#e5dccc] bg-[#fffdf8] shadow-window">
-        <div className="flex items-center justify-between border-b border-[#e5dccc] px-7 py-5">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff0df] text-[#c8731c]">
-              <AlertTriangle className="h-6 w-6" />
+    <div className="modal-scrim">
+      <div className="modal-panel max-w-lg">
+        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]">
+              <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="type-section-title text-[#28231f]">确认移动到系统回收站？</h2>
-              <p className="type-caption mt-1 text-[#8b8175]">{formatDeleteMode(mode)}</p>
+              <h2 className="type-section-title text-[var(--color-heading)]">确认移动到系统回收站？</h2>
+              <p className="type-caption mt-1 text-[var(--color-muted)]">{formatDeleteMode(mode)}</p>
             </div>
           </div>
-          <button className="rounded-xl p-2 text-[#9a9185] transition hover:bg-[#f1ece4] hover:text-[#3f372f]" onClick={onCancel} aria-label="关闭">
+          <button className="icon-btn text-[var(--color-subtle)] hover:bg-[#f1ece4] hover:text-[var(--color-text)]" onClick={onCancel} aria-label="关闭">
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="space-y-5 px-7 py-6">
-          <div className="type-body rounded-2xl border border-[#f0c6bd] bg-[#fff0df] p-5 text-[#8e4f1e]">
+        <div className="px-5 py-4">
+          <div className="type-body alert-panel alert-red">
             你将移动 {count} 个文件到系统回收站，预计释放 {formatBytes(totalSize)}。
             此操作不会硬删除文件，但仍建议确认文件已备份或不再需要。
           </div>
         </div>
-        <div className="flex justify-end gap-3 border-t border-[#e5dccc] px-7 py-5">
-          <button className="type-ui h-11 rounded-xl border border-[#e1d7c8] bg-white px-6 text-[#3f372f] transition hover:bg-[#fbf7ef]" onClick={onCancel}>
+        <div className="flex justify-end gap-3 border-t border-[var(--color-border)] px-5 py-4">
+          <button className="btn btn-secondary" onClick={onCancel}>
             取消
           </button>
           <button
-            className="type-ui inline-flex h-11 items-center gap-2 rounded-xl bg-[#c95f64] px-6 text-white shadow-sm transition hover:bg-[#b54d52] disabled:cursor-not-allowed disabled:bg-[#ddb1b3]"
+            className="btn btn-danger"
             disabled={!canConfirm}
             onClick={onConfirm}
           >

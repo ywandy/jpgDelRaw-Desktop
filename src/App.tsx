@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { DEFAULT_SETTINGS } from "../shared/constants";
-import type { AppSettings, CompareResult, DeleteMode, DeleteResult, PlatformName, ScanResult, UpdateInfo, UpdateProgress, UpdateState } from "../shared/types";
+import type { AppSettings, CompareResult, DeleteMode, DeleteResult, MediaFile, PlatformName, ScanResult, UpdateInfo, UpdateProgress, UpdateState } from "../shared/types";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { api } from "./lib/api";
 import { AboutPage } from "./pages/AboutPage";
 import { HomePage } from "./pages/HomePage";
-import { PendingDeletePage, selectedMediaFiles } from "./pages/PendingDeletePage";
 import { ScanResultPage } from "./pages/ScanResultPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import type { PageKey } from "./types/navigation";
@@ -189,6 +188,15 @@ export default function App() {
     }
   }
 
+  async function openFileLocation(filePath: string): Promise<void> {
+    setError(undefined);
+    try {
+      await api.showItemInFolder(filePath);
+    } catch (openError) {
+      setError(`无法打开文件位置：${getErrorMessage(openError)}`);
+    }
+  }
+
   async function saveSettings(nextSettings: AppSettings): Promise<void> {
     setSavingSettings(true);
     setError(undefined);
@@ -297,15 +305,8 @@ export default function App() {
         <ScanResultPage
           scanResult={scanResult}
           compareResult={compareResult}
-          onRescan={() => void startScan()}
-          onViewPending={() => setCurrentPage("pendingDelete")}
-          onGoHome={() => setCurrentPage("home")}
-        />
-      )}
-      {currentPage === "pendingDelete" && (
-        <PendingDeletePage
-          compareResult={compareResult}
           selectedPaths={selectedPaths}
+          error={error}
           requireConfirmText={settings.delete.requireConfirmText}
           deleting={deleting}
           deleteResult={deleteResult}
@@ -317,7 +318,9 @@ export default function App() {
           onOpenConfirm={() => setConfirmOpen(true)}
           onCloseConfirm={() => setConfirmOpen(false)}
           onConfirmDelete={() => void confirmDelete()}
-          onCancel={() => setCurrentPage("scanResult")}
+          onOpenFileLocation={(filePath) => void openFileLocation(filePath)}
+          onRescan={() => void startScan()}
+          onGoHome={() => setCurrentPage("home")}
         />
       )}
       {currentPage === "settings" && (
@@ -369,4 +372,8 @@ function getNoComparableFilesMessage(scanResult: ScanResult): string {
   }
 
   return `${modeLabel}，但没有找到可识别的 RAW 文件；当前 JPG 类图片 ${imageCount} 个。请检查 RAW 目录内容或扩展名。`;
+}
+
+function selectedMediaFiles(compareResult: CompareResult | undefined, selectedPaths: Set<string>): MediaFile[] {
+  return compareResult?.deleteCandidates.filter((file) => selectedPaths.has(file.path)) ?? [];
 }

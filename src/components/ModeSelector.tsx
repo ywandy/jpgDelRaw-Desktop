@@ -9,8 +9,8 @@ interface ModeSelectorProps {
 export function ModeSelector({ value, onChange }: ModeSelectorProps) {
   return (
     <section>
-      <h2 className="type-card-title mb-3 text-slate-900">选择匹配与删除模式</h2>
-      <div className="grid grid-cols-1 gap-4 min-[980px]:grid-cols-2">
+      <h2 className="type-card-title mb-2 text-[var(--color-heading)]">选择匹配与删除模式</h2>
+      <div className="grid grid-cols-1 gap-3 min-[980px]:grid-cols-2">
         <ModeCard
           mode="jpg_as_source_delete_raw"
           title="以 JPG 为准删除 RAW"

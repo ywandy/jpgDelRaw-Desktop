@@ -16,20 +16,20 @@ export function AppTitleBar({ platform }: AppTitleBarProps) {
   return (
     <header
       className={[
-        "drag-region flex h-14 shrink-0 items-center",
-        tone === "linux" ? "bg-zinc-900 text-white" : "bg-[#f4efe8] text-[#6d6459]"
+        "titlebar drag-region flex shrink-0 items-center",
+        tone === "linux" ? "bg-zinc-900 text-white" : ""
       ].join(" ")}
     >
-      <div className={["drag-region flex h-full shrink-0 items-center px-4", isMac ? "w-56 min-[1200px]:w-60" : "w-56 min-[1200px]:w-60"].join(" ")}>
+      <div className={["drag-region flex h-full w-52 shrink-0 items-center px-4 min-[1200px]:w-56"].join(" ")}>
         {!isMac && <div className="type-ui flex items-center gap-2" />}
       </div>
-      <div className="type-ui drag-region flex h-full flex-1 select-none items-center justify-center gap-2 text-[#6d6459]">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7ba17c] text-white">
+      <div className="type-ui drag-region flex h-full flex-1 select-none items-center justify-center gap-2 text-[var(--color-muted)]">
+        <span className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-primary)] text-white">
           <Camera className={tone === "linux" ? "h-4 w-4 text-orange-400" : "h-4 w-4"} />
         </span>
         <span>{APP_TITLE}</span>
       </div>
-      <div className="no-drag flex w-56 shrink-0 justify-end min-[1200px]:w-60">
+      <div className="no-drag flex w-52 shrink-0 justify-end min-[1200px]:w-56">
         {!isMac && <WindowControls tone={tone} />}
       </div>
     </header>
@@ -37,8 +37,8 @@ export function AppTitleBar({ platform }: AppTitleBarProps) {
 }
 
 function WindowControls({ tone }: { tone: "windows" | "linux" | "mac" }) {
-  const base = "flex h-12 w-12 items-center justify-center transition";
-  const normal = tone === "linux" ? "hover:bg-white/10" : "hover:bg-slate-100";
+  const base = "flex h-10 w-11 items-center justify-center transition";
+  const normal = tone === "linux" ? "hover:bg-white/10" : "hover:bg-[var(--color-surface-soft)]";
 
   return (
     <>

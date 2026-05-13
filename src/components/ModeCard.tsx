@@ -16,18 +16,20 @@ export function ModeCard({ mode, title, description, sourceLabel, deleteLabel, a
   return (
     <button
       className={[
-        "group flex min-h-36 flex-1 gap-3 rounded-[18px] border bg-white p-4 text-left transition",
-        active ? "border-indigo-500 bg-indigo-50/70 shadow-sm" : "border-slate-200 hover:border-indigo-300 hover:bg-[#fffdf8]"
+        "group flex min-h-[116px] flex-1 gap-3 rounded-[var(--radius-lg)] border bg-white p-3 text-left transition",
+        active
+          ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-sm"
+          : "border-[var(--color-border)] hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-soft)]"
       ].join(" ")}
       onClick={() => onSelect(mode)}
     >
-      {active ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600" /> : <Circle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />}
+      {active ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-primary-strong)]" /> : <Circle className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-subtle)]" />}
       <span className="min-w-0 flex-1">
-        <span className="type-ui block text-slate-900">{title}</span>
-        <span className="type-body mt-1 block text-slate-500">{description}</span>
-        <span className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-2.5" aria-hidden="true">
+        <span className="type-ui block text-[var(--color-heading)]">{title}</span>
+        <span className="type-body mt-1 block text-[var(--color-muted)]">{description}</span>
+        <span className="mt-3 flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-tint)] p-2" aria-hidden="true">
           <ModeNode icon="source" label={`保留 ${sourceLabel}`} tone="source" />
-          <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
+          <ArrowRight className="h-4 w-4 shrink-0 text-[var(--color-subtle)] transition group-hover:translate-x-0.5" />
           <ModeNode icon="trash" label={`删除 ${deleteLabel}`} tone="delete" />
         </span>
       </span>
@@ -43,10 +45,10 @@ function ModeNode({ icon, label, tone }: { icon: "source" | "trash"; label: stri
     <span
       className={[
         "flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2",
-        isSource ? "bg-[#e8f1e5] text-[#547d55]" : "bg-[#fff0df] text-[#b15d22]"
+        isSource ? "bg-[var(--color-primary-soft)] text-[var(--color-primary-strong)]" : "bg-[var(--color-warning-soft)] text-[#b15d22]"
       ].join(" ")}
     >
-      <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70">
+      <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-white/70">
         <FileImage className="h-4 w-4 opacity-80" />
         <Icon className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white p-0.5" />
       </span>

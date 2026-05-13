@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import path from "node:path";
 
 import { APP_TITLE, APP_WINDOW_BOUNDS } from "../shared/constants.js";
@@ -67,6 +67,14 @@ function registerIpcHandlers(): void {
     return moveFilesToTrash(files, context, {
       generateLog: settings.delete.generateLog
     });
+  });
+
+  ipcMain.handle("files:show-item-in-folder", (_event, filePath: string) => {
+    if (typeof filePath !== "string" || filePath.length === 0) {
+      throw new Error("文件路径无效。");
+    }
+
+    shell.showItemInFolder(filePath);
   });
 
   ipcMain.handle("settings:get", () => getSettings());

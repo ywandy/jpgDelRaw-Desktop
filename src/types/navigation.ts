@@ -1,1 +1,1 @@
-export type PageKey = "home" | "scanResult" | "pendingDelete" | "settings" | "about";
+export type PageKey = "home" | "scanResult" | "settings" | "about";

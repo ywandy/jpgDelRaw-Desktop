@@ -1,0 +1,127 @@
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, test } from "vitest";
+
+import type { CompareResult, MediaFile, ScanResult } from "../shared/types";
+import { ScanResultPage } from "../src/pages/ScanResultPage";
+
+function mediaFile(filePath: string, kind: MediaFile["kind"], size = 10): MediaFile {
+  const segments = filePath.split("/");
+  const name = segments[segments.length - 1] || filePath;
+  const dotIndex = name.lastIndexOf(".");
+
+  return {
+    path: filePath,
+    name,
+    ext: dotIndex >= 0 ? name.slice(dotIndex).toLowerCase() : "",
+    key: dotIndex >= 0 ? name.slice(0, dotIndex).toLowerCase() : name.toLowerCase(),
+    kind,
+    size,
+    modifiedAt: 1
+  };
+}
+
+describe("ScanResultPage", () => {
+  test("renders pending delete files directly under the scan summary", () => {
+    const image = mediaFile("/Photos/JPG/IMG_0001.JPG", "image", 20);
+    const raw = mediaFile("/Photos/RAW/IMG_0001.CR3", "raw", 200);
+    const scanResult: ScanResult = {
+      rootPath: "/Photos",
+      directoryMode: "mixed_dir",
+      imageFiles: [image],
+      rawFiles: [raw],
+      sidecarFiles: [],
+      unknownFiles: []
+    };
+    const compareResult: CompareResult = {
+      mode: "jpg_as_source_delete_raw",
+      directoryMode: scanResult.directoryMode,
+      imageFiles: scanResult.imageFiles,
+      rawFiles: scanResult.rawFiles,
+      matchedPairs: [{ key: "img_0001", image, raw }],
+      deleteCandidates: [raw],
+      conflicts: [],
+      totalDeleteSize: raw.size
+    };
+    const noop = () => undefined;
+
+    const props: React.ComponentProps<typeof ScanResultPage> = {
+      scanResult,
+      compareResult,
+      selectedPaths: new Set([raw.path]),
+      requireConfirmText: true,
+      deleting: false,
+      deleteResult: undefined,
+      confirmOpen: false,
+      mode: "jpg_as_source_delete_raw",
+      onRescan: noop,
+      onGoHome: noop,
+      onToggleFile: noop,
+      onToggleAll: noop,
+      onSetFilesSelected: noop,
+      onOpenConfirm: noop,
+      onCloseConfirm: noop,
+      onConfirmDelete: noop,
+      onOpenFileLocation: noop
+    };
+
+    const markup = renderToStaticMarkup(React.createElement(ScanResultPage, props));
+
+    expect(markup).toContain("扫描完成");
+    expect(markup).toContain("JPG 类文件");
+    expect(markup).toContain("IMG_0001.CR3");
+    expect(markup).toContain("即将移动 1 个文件到系统回收站");
+    expect(markup).toContain("打开文件位置：IMG_0001.CR3");
+    expect(markup).not.toContain("查看待删除文件");
+  });
+
+  test("only renders open-location actions for RAW delete candidates", () => {
+    const image = mediaFile("/Photos/JPG/IMG_0002.JPG", "image", 20);
+    const raw = mediaFile("/Photos/RAW/IMG_0002.CR3", "raw", 200);
+    const scanResult: ScanResult = {
+      rootPath: "/Photos",
+      directoryMode: "mixed_dir",
+      imageFiles: [image],
+      rawFiles: [raw],
+      sidecarFiles: [],
+      unknownFiles: []
+    };
+    const compareResult: CompareResult = {
+      mode: "raw_as_source_delete_jpg",
+      directoryMode: scanResult.directoryMode,
+      imageFiles: scanResult.imageFiles,
+      rawFiles: scanResult.rawFiles,
+      matchedPairs: [{ key: "img_0002", image, raw }],
+      deleteCandidates: [image],
+      conflicts: [],
+      totalDeleteSize: image.size
+    };
+    const noop = () => undefined;
+
+    const props: React.ComponentProps<typeof ScanResultPage> = {
+      scanResult,
+      compareResult,
+      selectedPaths: new Set([image.path]),
+      error: undefined,
+      requireConfirmText: true,
+      deleting: false,
+      deleteResult: undefined,
+      confirmOpen: false,
+      mode: "raw_as_source_delete_jpg",
+      onRescan: noop,
+      onGoHome: noop,
+      onToggleFile: noop,
+      onToggleAll: noop,
+      onSetFilesSelected: noop,
+      onOpenConfirm: noop,
+      onCloseConfirm: noop,
+      onConfirmDelete: noop,
+      onOpenFileLocation: noop
+    };
+
+    const markup = renderToStaticMarkup(React.createElement(ScanResultPage, props));
+
+    expect(markup).toContain("IMG_0002.JPG");
+    expect(markup).not.toContain("打开文件位置：IMG_0002.JPG");
+  });
+});

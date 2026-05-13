@@ -14,9 +14,9 @@ export function DropZone({ rootPath, disabled, onBrowse, onDropFile }: DropZoneP
   return (
     <div
       className={[
-        "flex min-h-44 flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition",
-        dragging ? "border-indigo-500 bg-indigo-50" : "border-indigo-300 bg-white",
-        disabled ? "opacity-60" : "hover:border-indigo-500 hover:bg-indigo-50/60"
+        "panel-compact flex min-h-28 items-center gap-4 border-2 border-dashed text-left transition",
+        dragging ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]" : "border-[var(--color-border-strong)]",
+        disabled ? "opacity-60" : "hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)]"
       ].join(" ")}
       onDragOver={(event) => {
         event.preventDefault();
@@ -31,13 +31,17 @@ export function DropZone({ rootPath, disabled, onBrowse, onDropFile }: DropZoneP
         if (file) onDropFile(file);
       }}
     >
-      <UploadCloud className="mb-3 h-10 w-10 text-indigo-600" />
-      <div className="type-section-title text-indigo-700">拖入照片目录到这里</div>
-      <div className="type-body mt-2 max-w-xl truncate text-slate-500">
-        {rootPath || "支持拖拽文件夹到此处，或点击选择目录"}
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-soft)] text-[var(--color-primary-strong)]">
+        <UploadCloud className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="type-section-title text-[var(--color-primary-strong)]">拖入照片目录到这里</div>
+        <div className="type-body mt-1 truncate text-[var(--color-muted)]" title={rootPath}>
+          {rootPath || "支持拖拽文件夹到此处，或点击选择目录"}
+        </div>
       </div>
       <button
-        className="type-ui mt-5 inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700"
+        className="btn btn-secondary shrink-0"
         disabled={disabled}
         onClick={onBrowse}
       >

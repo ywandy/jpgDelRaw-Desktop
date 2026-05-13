@@ -20,28 +20,29 @@ export function SettingsPage({ settings, saving, updateInfo, updateState, onSave
   }, [settings]);
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col">
-      <div className="min-h-0 flex-1 overflow-auto pr-1">
-        <div className="space-y-5 pb-6">
-          <div>
-            <h1 className="type-page-title text-slate-950">设置</h1>
-            <p className="type-page-subtitle mt-1 text-slate-500">扫描、安全确认、外观、更新与附属文件行为</p>
+    <div className="page">
+      <div className="page-scroll">
+        <div className="page-stack">
+          <div className="page-title-group">
+            <h1 className="type-page-title page-title">设置</h1>
+            <p className="type-page-subtitle page-subtitle">扫描、安全确认、外观、更新与附属文件行为</p>
           </div>
 
-          <SettingsSection title="外观设置">
+          <div className="grid grid-cols-2 gap-3">
+            <SettingsSection title="外观设置">
             <div className="flex min-h-14 flex-wrap items-center justify-between gap-4 py-3">
               <div>
-                <div className="type-ui text-slate-700">字号</div>
-                <div className="type-caption mt-1 text-slate-500">控制全局界面文字大小</div>
+                <div className="type-ui text-[var(--color-text)]">字号</div>
+                <div className="type-caption mt-1 text-[var(--color-muted)]">控制全局界面文字大小</div>
               </div>
               <FontScaleControl
                 value={draft.appearance.fontScale}
                 onChange={(fontScale) => setDraft({ ...draft, appearance: { ...draft.appearance, fontScale } })}
               />
             </div>
-          </SettingsSection>
+            </SettingsSection>
 
-          <SettingsSection title="扫描设置">
+            <SettingsSection title="扫描设置">
             <ToggleRow
               label="递归扫描"
               checked={draft.scan.recursive}
@@ -57,9 +58,9 @@ export function SettingsPage({ settings, saving, updateInfo, updateState, onSave
               checked={draft.scan.includeHiddenFiles}
               onChange={(value) => setDraft({ ...draft, scan: { ...draft.scan, includeHiddenFiles: value } })}
             />
-          </SettingsSection>
+            </SettingsSection>
 
-          <SettingsSection title="删除设置">
+            <SettingsSection title="删除设置">
             <ToggleRow
               label="输入确认文本"
               checked={draft.delete.requireConfirmText}
@@ -70,9 +71,9 @@ export function SettingsPage({ settings, saving, updateInfo, updateState, onSave
               checked={draft.delete.generateLog}
               onChange={(value) => setDraft({ ...draft, delete: { ...draft.delete, generateLog: value } })}
             />
-          </SettingsSection>
+            </SettingsSection>
 
-          <SettingsSection title="更新设置">
+            <SettingsSection title="更新设置">
             <ToggleRow
               label="启动时自动检查更新"
               checked={draft.updates.autoCheckOnStartup}
@@ -80,15 +81,15 @@ export function SettingsPage({ settings, saving, updateInfo, updateState, onSave
             />
             <div className="flex min-h-14 flex-wrap items-center justify-between gap-4 py-3">
               <div>
-                <div className="type-ui text-slate-700">手动检查更新</div>
-                <div className="type-caption mt-1 text-slate-500">最近检查：{formatLastCheckedAt(draft.updates.lastCheckedAt)}</div>
+                <div className="type-ui text-[var(--color-text)]">手动检查更新</div>
+                <div className="type-caption mt-1 text-[var(--color-muted)]">最近检查：{formatLastCheckedAt(draft.updates.lastCheckedAt)}</div>
                 <div className={`type-caption mt-1 ${updateState.status === "error" ? "text-[#9d3f44]" : "text-[#2f688b]"}`}>
                   {getUpdateStatusMessage(updateState, updateInfo)}
                 </div>
               </div>
               <button
                 type="button"
-                className="type-ui inline-flex h-10 items-center gap-2 rounded-xl border border-[#b8d1e0] bg-white px-4 text-[#2f688b] transition hover:bg-[#f4fbff] disabled:cursor-not-allowed disabled:opacity-60"
+                className="btn btn-secondary border-[#b8d1e0] text-[#2f688b] hover:bg-[#f4fbff]"
                 disabled={updateState.status === "checking" || updateState.status === "downloading" || updateState.status === "installing"}
                 onClick={onCheckUpdate}
               >
@@ -96,18 +97,19 @@ export function SettingsPage({ settings, saving, updateInfo, updateState, onSave
                 {updateState.status === "checking" ? "检查中" : "检查更新"}
               </button>
             </div>
-          </SettingsSection>
+            </SettingsSection>
 
-          <SettingsSection title="附属文件">
-            <ToggleRow label="随 RAW 删除 XMP / DOP" checked={false} disabled onChange={() => undefined} />
-          </SettingsSection>
+            <SettingsSection title="附属文件">
+              <ToggleRow label="随 RAW 删除 XMP / DOP" checked={false} disabled onChange={() => undefined} />
+            </SettingsSection>
+          </div>
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-[#e5dccc] bg-[#fffdf8]/95 pt-4">
+      <div className="page-actionbar">
         <div className="flex justify-end">
           <button
-            className="type-ui inline-flex h-11 items-center gap-2 rounded-lg bg-indigo-600 px-5 text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+            className="btn btn-primary"
             disabled={saving}
             onClick={() => onSave(draft)}
           >
@@ -122,9 +124,9 @@ export function SettingsPage({ settings, saving, updateInfo, updateState, onSave
 
 function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="type-card-title mb-2 text-slate-950">{title}</h2>
-      <div className="divide-y divide-slate-100">{children}</div>
+    <section className="panel-compact">
+      <h2 className="type-card-title mb-1 text-[var(--color-heading)]">{title}</h2>
+      <div className="divide-y divide-[var(--color-border)]">{children}</div>
     </section>
   );
 }
@@ -137,14 +139,14 @@ const FONT_SCALE_OPTIONS: Array<{ value: FontScale; label: string }> = [
 
 function FontScaleControl({ value, onChange }: { value: FontScale; onChange: (value: FontScale) => void }) {
   return (
-    <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+    <div className="inline-flex rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-tint)] p-1">
       {FONT_SCALE_OPTIONS.map((option) => (
         <button
           key={option.value}
           type="button"
           className={[
-            "type-ui h-9 rounded-lg px-4 transition",
-            value === option.value ? "bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-950"
+            "type-ui h-8 rounded-[var(--radius-sm)] px-3 transition",
+            value === option.value ? "bg-white text-[var(--color-primary-strong)] shadow-sm ring-1 ring-[var(--color-border)]" : "text-[var(--color-muted)] hover:text-[var(--color-heading)]"
           ].join(" ")}
           onClick={() => onChange(option.value)}
         >
@@ -167,11 +169,11 @@ function ToggleRow({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <label className={`type-ui flex h-12 items-center justify-between ${disabled ? "opacity-50" : ""}`}>
-      <span className="text-slate-700">{label}</span>
+    <label className={`type-ui flex h-10 items-center justify-between ${disabled ? "opacity-50" : ""}`}>
+      <span className="text-[var(--color-text)]">{label}</span>
       <input
         type="checkbox"
-        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+        className="form-check focus:ring-[var(--color-primary-ring)]"
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}

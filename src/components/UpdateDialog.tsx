@@ -19,26 +19,26 @@ export function UpdateDialog({ open, info, state, onCancel, onDownload, onInstal
   const percent = state.total && state.total > 0 ? Math.min(100, Math.round(((state.downloaded ?? 0) / state.total) * 100)) : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d2823]/45 p-6 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-[22px] border border-[#d4e3ec] bg-[#fbfdff] shadow-window">
-        <div className="flex items-center justify-between border-b border-[#d4e3ec] px-7 py-5">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e5f2fb] text-[#2f688b]">
-              <DownloadCloud className="h-6 w-6" />
+    <div className="modal-scrim">
+      <div className="modal-panel max-w-xl border-[#d4e3ec] bg-[#fbfdff]">
+        <div className="flex items-center justify-between border-b border-[#d4e3ec] px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[#e5f2fb] text-[#2f688b]">
+              <DownloadCloud className="h-5 w-5" />
             </div>
             <div>
               <h2 className="type-section-title text-[#1f3340]">发现新版本 {info.version}</h2>
               <p className="type-caption mt-1 text-[#6f8796]">当前版本 v{info.currentVersion}</p>
             </div>
           </div>
-          <button className="rounded-xl p-2 text-[#7b919f] transition hover:bg-[#e8f2f8] hover:text-[#1f3340]" disabled={busy} onClick={onCancel} aria-label="关闭">
+          <button className="icon-btn text-[#7b919f] hover:bg-[#e8f2f8] hover:text-[#1f3340]" disabled={busy} onClick={onCancel} aria-label="关闭">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="space-y-5 px-7 py-6">
+        <div className="space-y-4 px-5 py-4">
           {info.date && <div className="type-caption text-[#6f8796]">发布时间：{formatDate(info.date)}</div>}
-          <div className="type-body max-h-44 overflow-auto whitespace-pre-wrap rounded-2xl border border-[#d4e3ec] bg-white p-4 text-[#385469]">
+          <div className="type-body max-h-40 overflow-auto whitespace-pre-wrap rounded-[var(--radius-md)] border border-[#d4e3ec] bg-white p-3 text-[#385469]">
             {info.body || "此版本包含稳定性改进。建议在没有进行扫描或删除操作时安装更新。"}
           </div>
 
@@ -54,21 +54,21 @@ export function UpdateDialog({ open, info, state, onCancel, onDownload, onInstal
             </div>
           )}
 
-          {state.status === "error" && state.error && <div className="type-body rounded-2xl border border-[#f0c6bd] bg-[#fff0df] p-4 text-[#9d3f44]">{state.error}</div>}
+          {state.status === "error" && state.error && <div className="type-body alert-panel alert-red">{state.error}</div>}
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-[#d4e3ec] px-7 py-5">
-          <button className="type-ui h-11 rounded-xl border border-[#c8d9e3] bg-white px-6 text-[#385469] transition hover:bg-[#f1f7fb] disabled:opacity-60" disabled={busy} onClick={onCancel}>
+        <div className="flex justify-end gap-3 border-t border-[#d4e3ec] px-5 py-4">
+          <button className="btn btn-secondary border-[#c8d9e3] text-[#385469] hover:bg-[#f1f7fb]" disabled={busy} onClick={onCancel}>
             稍后
           </button>
           {state.status === "ready" ? (
-            <button className="type-ui inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f688b] px-6 text-white shadow-sm transition hover:bg-[#255774]" onClick={onInstall}>
+            <button className="btn btn-blue" onClick={onInstall}>
               <DownloadCloud className="h-4 w-4" />
               重启后生效
             </button>
           ) : (
             <button
-              className="type-ui inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f688b] px-6 text-white shadow-sm transition hover:bg-[#255774] disabled:cursor-not-allowed disabled:bg-[#9bb8c8]"
+              className="btn btn-blue"
               disabled={busy}
               onClick={onDownload}
             >
