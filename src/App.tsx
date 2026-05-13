@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence } from "motion/react";
 
 import { DEFAULT_SETTINGS } from "../shared/constants";
 import type { AppSettings, CompareResult, DeleteMode, DeleteOperation, DeleteResult, MediaFile, PlatformName, ScanResult, TrashCapability, UpdateInfo, UpdateProgress, UpdateState } from "../shared/types";
 import { AppLayout } from "./components/AppLayout";
+import { MotionPage } from "./components/MotionPrimitives";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { api } from "./lib/api";
 import { AboutPage } from "./pages/AboutPage";
@@ -330,61 +332,72 @@ export default function App() {
         onDownload={() => void downloadUpdate()}
         onInstall={() => void installUpdate()}
       />
-      {currentPage === "home" && (
-        <HomePage
-          rootPath={rootPath}
-          mode={mode}
-          error={error}
-          scanning={scanning}
-          onModeChange={setMode}
-          onBrowse={() => void browseDirectory()}
-          onDropFile={acceptDroppedFile}
-          onStartScan={() => void startScan()}
-        />
-      )}
-      {currentPage === "scanResult" && (
-        <ScanResultPage
-          scanResult={scanResult}
-          compareResult={compareResult}
-          selectedPaths={selectedPaths}
-          error={error}
-          deleting={deleting}
-          deleteResult={deleteResult}
-          confirmOpen={confirmOpen}
-          mode={mode}
-          onToggleFile={toggleFile}
-          onToggleAll={toggleAll}
-          onSetFilesSelected={setFilesSelected}
-          trashCapability={trashCapability}
-          deleteOperation={deleteOperation}
-          checkingTrashCapability={checkingTrashCapability}
-          onDeleteOperationChange={setDeleteOperation}
-          onOpenConfirm={() => void openDeleteConfirm()}
-          onCloseConfirm={() => setConfirmOpen(false)}
-          onConfirmDelete={() => void confirmDelete()}
-          onOpenFileLocation={(filePath) => void openFileLocation(filePath)}
-          onRescan={() => void startScan()}
-          onGoHome={() => setCurrentPage("home")}
-        />
-      )}
-      {currentPage === "settings" && (
-        <SettingsPage
-          settings={settings}
-          saving={savingSettings}
-          updateInfo={updateInfo}
-          updateState={updateState}
-          onSave={(nextSettings) => void saveSettings(nextSettings)}
-          onCheckUpdate={() => void runUpdateCheck({ manual: true })}
-        />
-      )}
-      {currentPage === "about" && (
-        <AboutPage
-          updateInfo={updateInfo}
-          updateState={updateState}
-          onCheckUpdate={() => void runUpdateCheck({ manual: true })}
-          onShowUpdate={() => setUpdateDialogOpen(true)}
-        />
-      )}
+      <AnimatePresence mode="wait" initial={false}>
+        {currentPage === "home" && (
+          <MotionPage key="home">
+            <HomePage
+              rootPath={rootPath}
+              mode={mode}
+              error={error}
+              scanning={scanning}
+              onModeChange={setMode}
+              onBrowse={() => void browseDirectory()}
+              onDropFile={acceptDroppedFile}
+              onStartScan={() => void startScan()}
+            />
+          </MotionPage>
+        )}
+        {currentPage === "scanResult" && (
+          <MotionPage key="scanResult">
+            <ScanResultPage
+              scanResult={scanResult}
+              compareResult={compareResult}
+              selectedPaths={selectedPaths}
+              error={error}
+              scanning={scanning}
+              deleting={deleting}
+              deleteResult={deleteResult}
+              confirmOpen={confirmOpen}
+              mode={mode}
+              onToggleFile={toggleFile}
+              onToggleAll={toggleAll}
+              onSetFilesSelected={setFilesSelected}
+              trashCapability={trashCapability}
+              deleteOperation={deleteOperation}
+              checkingTrashCapability={checkingTrashCapability}
+              onDeleteOperationChange={setDeleteOperation}
+              onOpenConfirm={() => void openDeleteConfirm()}
+              onCloseConfirm={() => setConfirmOpen(false)}
+              onConfirmDelete={() => void confirmDelete()}
+              onOpenFileLocation={(filePath) => void openFileLocation(filePath)}
+              onRescan={() => void startScan()}
+              onGoHome={() => setCurrentPage("home")}
+            />
+          </MotionPage>
+        )}
+        {currentPage === "settings" && (
+          <MotionPage key="settings">
+            <SettingsPage
+              settings={settings}
+              saving={savingSettings}
+              updateInfo={updateInfo}
+              updateState={updateState}
+              onSave={(nextSettings) => void saveSettings(nextSettings)}
+              onCheckUpdate={() => void runUpdateCheck({ manual: true })}
+            />
+          </MotionPage>
+        )}
+        {currentPage === "about" && (
+          <MotionPage key="about">
+            <AboutPage
+              updateInfo={updateInfo}
+              updateState={updateState}
+              onCheckUpdate={() => void runUpdateCheck({ manual: true })}
+              onShowUpdate={() => setUpdateDialogOpen(true)}
+            />
+          </MotionPage>
+        )}
+      </AnimatePresence>
     </AppLayout>
   );
 }

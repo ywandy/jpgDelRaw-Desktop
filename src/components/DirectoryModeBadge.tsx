@@ -4,10 +4,10 @@ import { formatDirectoryMode } from "../lib/format";
 export function DirectoryModeBadge({ mode }: { mode: DirectoryMode }) {
   const className =
     mode === "separate_dirs"
-      ? "bg-blue-50 text-blue-700 ring-blue-200"
+      ? "bg-[var(--color-directory-separate-bg)] text-[var(--color-directory-separate-text)] ring-[var(--color-directory-separate-ring)]"
       : mode === "mixed_dir"
-        ? "bg-green-50 text-green-700 ring-green-200"
-        : "bg-orange-50 text-orange-700 ring-orange-200";
+        ? "bg-[var(--color-directory-mixed-bg)] text-[var(--color-directory-mixed-text)] ring-[var(--color-directory-mixed-ring)]"
+        : "bg-[var(--color-directory-manual-bg)] text-[var(--color-directory-manual-text)] ring-[var(--color-directory-manual-ring)]";
 
   return (
     <span className={`type-caption inline-flex items-center rounded-full px-3 py-1 ring-1 ${className}`}>

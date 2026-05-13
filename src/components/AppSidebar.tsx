@@ -1,7 +1,9 @@
 import { Camera, FileWarning, Home, Info, ListChecks, Settings } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 
 import { APP_VERSION } from "../../shared/constants";
 import type { PageKey } from "../types/navigation";
+import { getPressMotion } from "./MotionPrimitives";
 
 interface AppSidebarProps {
   currentPage: PageKey;
@@ -16,10 +18,12 @@ const NAV_ITEMS = [
 ] satisfies Array<{ key: PageKey; label: string; icon: typeof FileWarning }>;
 
 export function AppSidebar({ currentPage, onNavigate }: AppSidebarProps) {
+  const reduced = useReducedMotion();
+
   return (
     <aside className="app-sidebar flex shrink-0 flex-col">
       <div className="mb-4 flex items-center gap-3 border-b border-[var(--color-border)] pb-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] text-white shadow-sm">
+        <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] text-[var(--color-on-primary)] shadow-[var(--shadow-subtle)]">
           <Camera className="h-5 w-5" />
         </div>
         <div className="min-w-0">
@@ -33,19 +37,21 @@ export function AppSidebar({ currentPage, onNavigate }: AppSidebarProps) {
           const Icon = item.icon;
           const active = item.key === currentPage;
           return (
-            <button
+            <motion.button
               key={item.key}
               className={[
                 "nav-btn type-nav flex h-10 w-full items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition",
                 active
-                  ? "bg-[var(--color-primary-soft)] text-[var(--color-primary-strong)] shadow-sm"
+                  ? "bg-[var(--color-primary-soft)] text-[var(--color-primary-strong)] shadow-[var(--shadow-subtle)]"
                   : "text-[var(--color-muted)] hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-heading)]"
               ].join(" ")}
               onClick={() => onNavigate(item.key)}
+              layout
+              {...getPressMotion(reduced)}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
               <span className="truncate">{item.label}</span>
-            </button>
+            </motion.button>
           );
         })}
       </nav>

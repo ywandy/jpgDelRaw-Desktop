@@ -1,7 +1,9 @@
 import { DownloadCloud, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import type { UpdateInfo, UpdateState } from "../../shared/types";
 import { formatBytes } from "../lib/format";
+import { dialogPanelVariants, dialogScrimVariants, getPressMotion } from "./MotionPrimitives";
 
 interface UpdateDialogProps {
   open: boolean;
@@ -13,72 +15,88 @@ interface UpdateDialogProps {
 }
 
 export function UpdateDialog({ open, info, state, onCancel, onDownload, onInstall }: UpdateDialogProps) {
-  if (!open || !info) return null;
+  const reduced = useReducedMotion();
 
   const busy = state.status === "downloading" || state.status === "installing";
   const percent = state.total && state.total > 0 ? Math.min(100, Math.round(((state.downloaded ?? 0) / state.total) * 100)) : undefined;
 
   return (
-    <div className="modal-scrim">
-      <div className="modal-panel max-w-xl border-[#d4e3ec] bg-[#fbfdff]">
-        <div className="flex items-center justify-between border-b border-[#d4e3ec] px-5 py-4">
+    <AnimatePresence>
+      {open && info && (
+    <motion.div className="modal-scrim" variants={dialogScrimVariants(reduced)} initial="hidden" animate="show" exit="exit">
+      <motion.div className="modal-panel max-w-xl" variants={dialogPanelVariants(reduced)}>
+        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[#e5f2fb] text-[#2f688b]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-blue-soft)] text-[var(--color-accent-blue)]">
               <DownloadCloud className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="type-section-title text-[#1f3340]">发现新版本 {info.version}</h2>
-              <p className="type-caption mt-1 text-[#6f8796]">当前版本 v{info.currentVersion}</p>
+              <h2 className="type-section-title text-[var(--color-heading)]">发现新版本 {info.version}</h2>
+              <p className="type-caption mt-1 text-[var(--color-muted)]">当前版本 v{info.currentVersion}</p>
             </div>
           </div>
-          <button className="icon-btn text-[#7b919f] hover:bg-[#e8f2f8] hover:text-[#1f3340]" disabled={busy} onClick={onCancel} aria-label="关闭">
+          <motion.button className="icon-btn text-[var(--color-subtle)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-heading)]" disabled={busy} onClick={onCancel} aria-label="关闭" {...getPressMotion(reduced)}>
             <X className="h-5 w-5" />
-          </button>
+          </motion.button>
         </div>
 
         <div className="space-y-4 px-5 py-4">
-          {info.date && <div className="type-caption text-[#6f8796]">发布时间：{formatDate(info.date)}</div>}
-          <div className="type-body max-h-40 overflow-auto whitespace-pre-wrap rounded-[var(--radius-md)] border border-[#d4e3ec] bg-white p-3 text-[#385469]">
-            {info.body || "此版本包含稳定性改进。建议在没有进行扫描或删除操作时安装更新。"}
-          </div>
+          {info.date && <div className="type-caption text-[var(--color-muted)]">发布时间：{formatDate(info.date)}</div>}
+          <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-strong)]">
+            <div className="type-card-title border-b border-[var(--color-border)] px-3 py-2 text-[var(--color-heading)]">更新日志</div>
+            <div className="type-body max-h-40 overflow-auto whitespace-pre-wrap p-3 text-[var(--color-text)]">
+              {info.body || "此版本包含稳定性改进。建议在没有进行扫描或删除操作时安装更新。"}
+            </div>
+          </section>
 
-          {(state.status === "downloading" || state.status === "ready" || state.status === "installing") && (
-            <div className="space-y-2">
-              <div className="flex justify-between type-caption text-[#6f8796]">
+          <AnimatePresence>
+            {(state.status === "downloading" || state.status === "ready" || state.status === "installing") && (
+            <motion.div className="space-y-2" initial={{ opacity: 0, y: reduced ? 0 : 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduced ? 0 : -3 }} transition={{ duration: reduced ? 0.01 : 0.16, ease: "easeOut" }}>
+              <div className="flex justify-between type-caption text-[var(--color-muted)]">
                 <span>{state.status === "ready" ? "更新已下载，重启后生效。" : state.status === "installing" ? "正在准备重启安装" : "正在下载更新"}</span>
                 <span>{percent !== undefined ? `${percent}%` : formatBytes(state.downloaded ?? 0)}</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-[#dbeaf2]">
-                <div className="h-full rounded-full bg-[#2f688b] transition-all" style={{ width: `${state.status === "ready" ? 100 : percent ?? 30}%` }} />
+              <div className="h-2 overflow-hidden rounded-full bg-[var(--color-accent-blue-soft)]">
+                <div className="h-full rounded-full bg-[var(--color-accent-blue)] transition-all" style={{ width: `${state.status === "ready" ? 100 : percent ?? 30}%` }} />
               </div>
-            </div>
-          )}
+            </motion.div>
+            )}
+          </AnimatePresence>
 
-          {state.status === "error" && state.error && <div className="type-body alert-panel alert-red">{state.error}</div>}
+          <AnimatePresence>
+            {state.status === "error" && state.error && (
+              <motion.div className="type-body alert-panel alert-red" initial={{ opacity: 0, y: reduced ? 0 : 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0.01 : 0.16, ease: "easeOut" }}>
+                {state.error}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-[#d4e3ec] px-5 py-4">
-          <button className="btn btn-secondary border-[#c8d9e3] text-[#385469] hover:bg-[#f1f7fb]" disabled={busy} onClick={onCancel}>
+        <div className="flex justify-end gap-3 border-t border-[var(--color-border)] px-5 py-4">
+          <motion.button className="btn btn-secondary" disabled={busy} onClick={onCancel} {...getPressMotion(reduced)}>
             稍后
-          </button>
+          </motion.button>
           {state.status === "ready" ? (
-            <button className="btn btn-blue" onClick={onInstall}>
+            <motion.button className="btn btn-blue" onClick={onInstall} {...getPressMotion(reduced)}>
               <DownloadCloud className="h-4 w-4" />
               重启后生效
-            </button>
+            </motion.button>
           ) : (
-            <button
+            <motion.button
               className="btn btn-blue"
               disabled={busy}
               onClick={onDownload}
+              {...getPressMotion(reduced)}
             >
               <DownloadCloud className="h-4 w-4" />
               {busy ? "正在下载" : "下载更新"}
-            </button>
+            </motion.button>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

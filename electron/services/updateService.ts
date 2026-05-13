@@ -35,6 +35,10 @@ interface UpdateServiceOptions {
   helperPath?: string;
 }
 
+interface GitHubReleaseInfo {
+  body?: string | null;
+}
+
 let pendingManifest: UpdateManifest | undefined;
 let stagedAsarPath: string | undefined;
 let state: UpdateState = { status: "idle" };
@@ -63,12 +67,14 @@ export async function checkForUpdates(options: UpdateServiceOptions): Promise<Up
       return { available: false, currentVersion: APP_VERSION };
     }
 
-    pendingManifest = manifest;
+    const releaseNotes = await fetchGithubReleaseNotes(asset.url, options);
+    const updateNotes = releaseNotes || manifest.notes;
+    pendingManifest = { ...manifest, notes: updateNotes };
     const info = {
       currentVersion: APP_VERSION,
       version: manifest.version,
       date: manifest.pub_date,
-      body: manifest.notes
+      body: updateNotes
     };
     state = { status: "available", info };
     return { available: true, info };
@@ -184,6 +190,41 @@ async function fetchManifest(url: string): Promise<UpdateManifest> {
   return (await response.json()) as UpdateManifest;
 }
 
+async function fetchGithubReleaseNotes(assetUrl: string, options: UpdateServiceOptions): Promise<string | undefined> {
+  const apiUrl = getGithubReleaseApiUrl(assetUrl);
+  if (!apiUrl) {
+    await appendUpdateLog(options, `release notes skipped non-github asset=${assetUrl}`);
+    return undefined;
+  }
+
+  try {
+    await appendUpdateLog(options, `fetching release notes url=${apiUrl}`);
+    const response = await fetch(apiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/vnd.github+json"
+      }
+    });
+    if (!response.ok) {
+      await appendUpdateLog(options, `release notes unavailable: HTTP ${response.status}`);
+      return undefined;
+    }
+
+    const release = (await response.json()) as GitHubReleaseInfo;
+    const body = release.body?.trim();
+    if (!body) {
+      await appendUpdateLog(options, "release notes empty");
+      return undefined;
+    }
+
+    await appendUpdateLog(options, `release notes loaded length=${body.length}`);
+    return body;
+  } catch (error) {
+    await appendUpdateLog(options, `release notes failed: ${formatError(error)}`).catch(() => undefined);
+    return undefined;
+  }
+}
+
 export function getDownloadUrl(url: string, releaseProxyPrefix = DEFAULT_RELEASE_PROXY_PREFIX): string {
   const normalizedPrefix = normalizeProxyPrefix(releaseProxyPrefix);
   if (!normalizedPrefix || !isGithubReleaseUrl(url) || url.startsWith(normalizedPrefix)) {
@@ -191,6 +232,25 @@ export function getDownloadUrl(url: string, releaseProxyPrefix = DEFAULT_RELEASE
   }
 
   return `${normalizedPrefix}${url}`;
+}
+
+export function getGithubReleaseApiUrl(assetUrl: string): string | undefined {
+  try {
+    const parsed = new URL(assetUrl);
+    if (parsed.hostname !== "github.com") return undefined;
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const releasesIndex = parts.indexOf("releases");
+    if (releasesIndex < 2 || parts[releasesIndex + 1] !== "download") return undefined;
+
+    const owner = parts[releasesIndex - 2];
+    const repo = parts[releasesIndex - 1];
+    const tag = parts[releasesIndex + 2];
+    if (!owner || !repo || !tag) return undefined;
+
+    return `https://api.github.com/repos/${owner}/${repo}/releases/tags/${encodeURIComponent(decodeURIComponent(tag))}`;
+  } catch {
+    return undefined;
+  }
 }
 
 async function downloadFile(url: string, destination: string, onProgress: (progress: UpdateProgress) => void): Promise<{ downloaded: number; total?: number; contentType?: string }> {

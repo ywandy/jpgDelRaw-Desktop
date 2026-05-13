@@ -17,15 +17,15 @@ export function AppTitleBar({ platform }: AppTitleBarProps) {
     <header
       className={[
         "titlebar drag-region flex shrink-0 items-center",
-        tone === "linux" ? "bg-zinc-900 text-white" : ""
+        tone === "linux" ? "bg-[var(--color-platform-linux-titlebar)] text-[var(--color-on-platform-titlebar)]" : ""
       ].join(" ")}
     >
       <div className={["drag-region flex h-full w-52 shrink-0 items-center px-4 min-[1200px]:w-56"].join(" ")}>
         {!isMac && <div className="type-ui flex items-center gap-2" />}
       </div>
-      <div className="type-ui drag-region flex h-full flex-1 select-none items-center justify-center gap-2 text-[var(--color-muted)]">
-        <span className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-primary)] text-white">
-          <Camera className={tone === "linux" ? "h-4 w-4 text-orange-400" : "h-4 w-4"} />
+      <div className={`type-ui drag-region flex h-full flex-1 select-none items-center justify-center gap-2 ${tone === "linux" ? "text-[var(--color-on-platform-titlebar)]" : "text-[var(--color-muted)]"}`}>
+        <span className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-primary)] text-[var(--color-on-primary)]">
+          <Camera className={tone === "linux" ? "h-4 w-4 text-[var(--color-platform-linux-icon)]" : "h-4 w-4"} />
         </span>
         <span>{APP_TITLE}</span>
       </div>
@@ -38,7 +38,7 @@ export function AppTitleBar({ platform }: AppTitleBarProps) {
 
 function WindowControls({ tone }: { tone: "windows" | "linux" | "mac" }) {
   const base = "flex h-10 w-11 items-center justify-center transition";
-  const normal = tone === "linux" ? "hover:bg-white/10" : "hover:bg-[var(--color-surface-soft)]";
+  const normal = tone === "linux" ? "hover:bg-[var(--color-window-hover-linux)]" : "hover:bg-[var(--color-surface-soft)]";
 
   return (
     <>
@@ -49,7 +49,7 @@ function WindowControls({ tone }: { tone: "windows" | "linux" | "mac" }) {
         <Maximize2 className="h-4 w-4" />
       </button>
       <button
-        className={`${base} ${tone === "linux" ? "hover:bg-orange-600" : "hover:bg-red-600 hover:text-white"}`}
+        className={`${base} ${tone === "linux" ? "hover:bg-[var(--color-window-close-linux-hover)]" : "hover:bg-[var(--color-window-close-hover)] hover:text-[var(--color-on-window-close-hover)]"}`}
         aria-label="关闭"
         onClick={() => void api.windowClose()}
       >

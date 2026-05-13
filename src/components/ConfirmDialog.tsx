@@ -1,7 +1,9 @@
 import { AlertTriangle, Trash2, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import type { DeleteMode, TrashCapability } from "../../shared/types";
 import { formatBytes, formatDeleteMode } from "../lib/format";
+import { dialogPanelVariants, dialogScrimVariants, getPressMotion } from "./MotionPrimitives";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -30,7 +32,7 @@ export function ConfirmDialog({
   onMoveToTrashChange,
   onConfirm
 }: ConfirmDialogProps) {
-  if (!open) return null;
+  const reduced = useReducedMotion();
 
   const trashUnavailable = trashCapability.status === "unavailable";
   const canConfirm = !busy && !checkingTrashCapability;
@@ -38,8 +40,10 @@ export function ConfirmDialog({
   const actionLabel = moveToTrash ? "确认删除" : "永久删除";
 
   return (
-    <div className="modal-scrim">
-      <div className="modal-panel max-w-xl">
+    <AnimatePresence>
+      {open && (
+    <motion.div className="modal-scrim" variants={dialogScrimVariants(reduced)} initial="hidden" animate="show" exit="exit">
+      <motion.div className="modal-panel max-w-xl" variants={dialogPanelVariants(reduced)}>
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]">
@@ -50,9 +54,9 @@ export function ConfirmDialog({
               <p className="type-caption mt-1 text-[var(--color-muted)]">{formatDeleteMode(mode)}</p>
             </div>
           </div>
-          <button className="icon-btn text-[var(--color-subtle)] hover:bg-[#f1ece4] hover:text-[var(--color-text)]" onClick={onCancel} aria-label="关闭">
+          <motion.button className="icon-btn text-[var(--color-subtle)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]" onClick={onCancel} aria-label="关闭" {...getPressMotion(reduced)}>
             <X className="h-5 w-5" />
-          </button>
+          </motion.button>
         </div>
         <div className="space-y-3 px-5 py-4">
           <div className={`type-body alert-panel ${moveToTrash ? "alert-orange" : "alert-red"}`}>
@@ -67,7 +71,7 @@ export function ConfirmDialog({
             )}
           </div>
 
-          <label className={`flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3.5 py-3 ${trashUnavailable ? "opacity-75" : ""}`}>
+          <label className={`flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-strong)] px-3.5 py-3 shadow-[var(--shadow-subtle)] ${trashUnavailable ? "opacity-75" : ""}`}>
             <input
               type="checkbox"
               className="form-check mt-0.5 focus:ring-[var(--color-primary-ring)]"
@@ -84,20 +88,23 @@ export function ConfirmDialog({
           </label>
         </div>
         <div className="flex justify-end gap-3 border-t border-[var(--color-border)] px-5 py-4">
-          <button className="btn btn-secondary" onClick={onCancel}>
+          <motion.button className="btn btn-secondary" onClick={onCancel} {...getPressMotion(reduced)}>
             取消
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             className="btn btn-danger"
             disabled={!canConfirm}
             onClick={onConfirm}
+            {...getPressMotion(reduced)}
           >
             <Trash2 className="h-4 w-4" />
             {busy ? (moveToTrash ? "正在移动" : "正在删除") : `${actionLabel}（${count} 个文件）`}
-          </button>
+          </motion.button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import type { CompareResult, MediaFile, ScanResult } from "../shared/types";
+import { FileTable } from "../src/components/FileTable";
 import { ScanResultPage } from "../src/pages/ScanResultPage";
 
 function mediaFile(filePath: string, kind: MediaFile["kind"], size = 10): MediaFile {
@@ -49,6 +50,7 @@ describe("ScanResultPage", () => {
       scanResult,
       compareResult,
       selectedPaths: new Set([raw.path]),
+      scanning: false,
       deleting: false,
       deleteResult: undefined,
       confirmOpen: false,
@@ -75,6 +77,8 @@ describe("ScanResultPage", () => {
     expect(markup).toContain("IMG_0001.CR3");
     expect(markup).toContain("默认优先移动到系统回收站");
     expect(markup).toContain("打开文件位置：IMG_0001.CR3");
+    expect(markup).not.toContain("展开全部");
+    expect(markup).not.toContain("收起全部");
     expect(markup).not.toContain("查看待删除文件");
   });
 
@@ -106,6 +110,7 @@ describe("ScanResultPage", () => {
       compareResult,
       selectedPaths: new Set([image.path]),
       error: undefined,
+      scanning: false,
       deleting: false,
       deleteResult: undefined,
       confirmOpen: false,
@@ -129,5 +134,29 @@ describe("ScanResultPage", () => {
 
     expect(markup).toContain("IMG_0002.JPG");
     expect(markup).not.toContain("打开文件位置：IMG_0002.JPG");
+  });
+
+  test("renders simplified file items without repeated status labels", () => {
+    const image = mediaFile("/Photos/JPG/IMG_0003.JPG", "image", 20);
+    const raw = mediaFile("/Photos/RAW/IMG_0003.CR3", "raw", 200);
+    const noop = () => undefined;
+
+    const markup = renderToStaticMarkup(
+      React.createElement(FileTable, {
+        files: [raw],
+        matchedPairs: [{ key: "img_0003", image, raw }],
+        selectedPaths: new Set([raw.path]),
+        onToggleFile: noop,
+        onToggleAll: noop,
+        onSetFilesSelected: noop,
+        onOpenFileLocation: noop
+      })
+    );
+
+    expect(markup).toContain("IMG_0003.CR3");
+    expect(markup).toContain("RAW");
+    expect(markup).toContain("打开文件位置：IMG_0003.CR3");
+    expect(markup).not.toMatch(/>已匹配</);
+    expect(markup).not.toMatch(/>待删除</);
   });
 });
