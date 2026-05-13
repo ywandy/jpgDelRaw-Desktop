@@ -10,15 +10,28 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - macos-latest
-          - windows-latest
-          - ubuntu-latest
+        include:
+          - name: macOS arm64
+            id: mac-arm64
+            runner: macos-latest
+            builder-args: --mac --arm64
+          - name: macOS x64
+            id: mac-x64
+            runner: macos-latest
+            builder-args: --mac --x64
+          - name: Windows x64
+            id: windows-x64
+            runner: windows-latest
+            builder-args: --win --x64
+          - name: Linux x64
+            id: linux-x64
+            runner: ubuntu-latest
+            builder-args: --linux --x64
 
     steps:
       - name: Checkout
@@ -47,17 +60,20 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      - name: Build app
+        run: pnpm build
+
       - name: Build installers
-        run: pnpm dist
+        run: pnpm exec electron-builder ${{ matrix.builder-args }} --publish never
 
       - name: Generate app.asar update manifest
-        if: startsWith(github.ref, 'refs/tags/v') && runner.os == 'macOS'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.id == 'mac-arm64'
         run: pnpm manifest:asar release release
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: raw-pair-cleaner-${{ matrix.os }}
+          name: raw-pair-cleaner-${{ matrix.id }}
           path: |
             release/**
             !release/**/*.blockmap
@@ -90,4 +106,3 @@ jobs:
             artifacts/**/*.yml
             artifacts/**/raw-pair-cleaner-*-app.asar
             artifacts/**/latest-asar.json
-

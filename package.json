@@ -15,6 +15,7 @@
     },
     "asar": true,
     "compression": "maximum",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
