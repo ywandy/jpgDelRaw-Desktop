@@ -108,9 +108,8 @@ export async function getTrashCapability(targetPath: string, dependencies: Trash
     };
   }
 
-  const resolvedPath = path.resolve(targetPath);
-
   if (platform === "darwin") {
+    const resolvedPath = path.posix.resolve(targetPath);
     if (!resolvedPath.startsWith("/Volumes/")) {
       return {
         status: "available",
@@ -140,6 +139,7 @@ export async function getTrashCapability(targetPath: string, dependencies: Trash
   }
 
   if (platform === "linux") {
+    const resolvedPath = path.posix.resolve(targetPath);
     const homeDir = dependencies.homeDir ?? os.homedir();
     if (isPathInside(resolvedPath, homeDir)) {
       return {
@@ -194,14 +194,14 @@ function isWindowsNetworkPath(targetPath: string): boolean {
 }
 
 function getDarwinVolumeRoot(resolvedPath: string): string {
-  const segments = resolvedPath.split(path.sep).filter(Boolean);
-  if (segments[0] !== "Volumes" || !segments[1]) return path.parse(resolvedPath).root;
-  return path.join(path.sep, segments[0], segments[1]);
+  const segments = resolvedPath.split(path.posix.sep).filter(Boolean);
+  if (segments[0] !== "Volumes" || !segments[1]) return path.posix.parse(resolvedPath).root;
+  return path.posix.join(path.posix.sep, segments[0], segments[1]);
 }
 
 function isPathInside(targetPath: string, parentPath: string): boolean {
-  const relativePath = path.relative(parentPath, targetPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath));
+  const relativePath = path.posix.relative(parentPath, targetPath);
+  return relativePath === "" || (!relativePath.startsWith("..") && !path.posix.isAbsolute(relativePath));
 }
 
 async function canAccess(accessPath: (targetPath: string, mode?: number) => Promise<void>, targetPath: string, mode: number): Promise<boolean> {
@@ -238,10 +238,10 @@ async function findLinuxMountRoot(
 
   try {
     const targetStat = await dependencies.statPath(targetPath);
-    let currentPath = targetStat.isDirectory() ? targetPath : path.dirname(targetPath);
+    let currentPath = targetStat.isDirectory() ? targetPath : path.posix.dirname(targetPath);
 
-    while (currentPath !== path.parse(currentPath).root) {
-      const parentPath = path.dirname(currentPath);
+    while (currentPath !== path.posix.parse(currentPath).root) {
+      const parentPath = path.posix.dirname(currentPath);
       const parentStat = await dependencies.statPath(parentPath);
       if (parentStat.dev !== targetStat.dev) return currentPath;
       currentPath = parentPath;
@@ -250,7 +250,7 @@ async function findLinuxMountRoot(
     // If stat traversal fails, use the filesystem root as the safest fallback.
   }
 
-  return path.parse(targetPath).root;
+  return path.posix.parse(targetPath).root;
 }
 
 function unescapeLinuxMountPath(mountPath: string): string {
