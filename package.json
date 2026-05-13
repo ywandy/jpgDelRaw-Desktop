@@ -2,10 +2,19 @@
   "name": "raw-pair-cleaner",
   "version": "1.0.3",
   "description": "RAW Pair Cleaner / 底片清理器",
+  "license": "MIT",
   "author": {
     "name": "ywandy",
     "email": "ywandy@users.noreply.github.com"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ywandy/jpgDelRaw-Desktop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ywandy/jpgDelRaw-Desktop/issues"
+  },
+  "homepage": "https://github.com/ywandy/jpgDelRaw-Desktop#readme",
   "main": "dist-electron/electron/main.js",
   "build": {
     "appId": "com.ywandy.rawpaircleaner",

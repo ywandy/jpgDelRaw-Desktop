@@ -19,6 +19,7 @@
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=1f2937" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" />
   <img alt="pnpm" src="https://img.shields.io/badge/pnpm-required-F69220?style=flat-square&logo=pnpm&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-16a34a?style=flat-square" />
 </p>
 
 ![应用概览](docs/assets/readme-app-overview.svg)
@@ -180,6 +181,12 @@ pnpm test tests/core.test.ts
 
 RAW Pair Cleaner 是本地桌面工具。文件扫描、匹配、删除、设置和日志都在本地 Electron 应用内完成，核心流程不需要云同步或远程图片处理。
 
+## 作者与仓库
+
+- 作者：ywandy（<https://github.com/ywandy>）
+- GitHub 仓库：<https://github.com/ywandy/jpgDelRaw-Desktop>
+- 问题反馈：<https://github.com/ywandy/jpgDelRaw-Desktop/issues>
+
 ## 贡献指南
 
 欢迎贡献。建议的流程：
@@ -198,4 +205,4 @@ RAW Pair Cleaner 是本地桌面工具。文件扫描、匹配、删除、设置
 
 ## 许可证
 
-当前仓库尚未包含许可证文件。正式开源前，请选择并添加明确许可证，例如 MIT、Apache-2.0 或 GPL-3.0。
+本项目使用 MIT 许可证，详见 [`LICENSE`](LICENSE)。

@@ -32,29 +32,12 @@ input {
 }
 
 button {
-  -webkit-app-region: no-drag;
   cursor: pointer;
 }
 
 button:disabled,
 input:disabled {
   cursor: not-allowed;
-}
-
-.drag-region {
-  -webkit-app-region: drag;
-}
-
-.drag-region *:not(button) {
-  -webkit-app-region: drag;
-}
-
-.no-drag {
-  -webkit-app-region: no-drag;
-}
-
-.no-drag * {
-  -webkit-app-region: no-drag;
 }
 
 ::-webkit-scrollbar {
@@ -160,12 +143,6 @@ input:disabled {
     background: var(--color-surface);
     box-shadow: var(--shadow-panel);
     padding: 1rem;
-  }
-
-  .titlebar {
-    height: 3rem;
-    background: transparent;
-    color: var(--color-muted);
   }
 
   .page {

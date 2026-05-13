@@ -12,16 +12,13 @@ export const api: Window["rawPairCleaner"] =
     moveToTrash: () => missingPreload(),
     getTrashCapability: () => missingPreload(),
     showItemInFolder: () => missingPreload(),
+    openExternal: () => missingPreload(),
     getSettings: () => Promise.resolve(DEFAULT_SETTINGS),
     saveSettings: () => missingPreload(),
-    getPlatform: () => Promise.resolve("darwin"),
     getPathForFile: () => "",
     getUpdateState: () => Promise.resolve({ status: "idle" }),
     checkForUpdates: () => Promise.resolve({ available: false, currentVersion: "0.0.0" }),
     downloadUpdate: () => missingPreload(),
     installUpdate: () => missingPreload(),
-    onUpdateProgress: () => () => undefined,
-    windowMinimize: () => Promise.resolve(),
-    windowMaximize: () => Promise.resolve(),
-    windowClose: () => Promise.resolve()
+    onUpdateProgress: () => () => undefined
   };

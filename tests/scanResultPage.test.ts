@@ -47,6 +47,7 @@ describe("ScanResultPage", () => {
     const noop = () => undefined;
 
     const props: React.ComponentProps<typeof ScanResultPage> = {
+      rootPath: scanResult.rootPath,
       scanResult,
       compareResult,
       selectedPaths: new Set([raw.path]),
@@ -67,12 +68,19 @@ describe("ScanResultPage", () => {
       onCloseConfirm: noop,
       onDeleteOperationChange: noop,
       onConfirmDelete: noop,
-      onOpenFileLocation: noop
+      onOpenFileLocation: noop,
+      onDropFile: noop,
+      onBrowse: noop
     };
 
     const markup = renderToStaticMarkup(React.createElement(ScanResultPage, props));
 
     expect(markup).toContain("扫描完成");
+    expect(markup).toContain("拖入目录或选择目录重新扫描");
+    expect(markup).toContain("选择目录");
+    expect(markup).toContain("重新扫描");
+    expect(markup).toContain("JPG -&gt; RAW（删除 RAW）");
+    expect(markup).not.toContain("以 JPG 为准删除 RAW");
     expect(markup).toContain("JPG 类文件");
     expect(markup).toContain("IMG_0001.CR3");
     expect(markup).toContain("默认优先移动到系统回收站");
@@ -106,6 +114,7 @@ describe("ScanResultPage", () => {
     const noop = () => undefined;
 
     const props: React.ComponentProps<typeof ScanResultPage> = {
+      rootPath: scanResult.rootPath,
       scanResult,
       compareResult,
       selectedPaths: new Set([image.path]),
@@ -127,12 +136,16 @@ describe("ScanResultPage", () => {
       onCloseConfirm: noop,
       onDeleteOperationChange: noop,
       onConfirmDelete: noop,
-      onOpenFileLocation: noop
+      onOpenFileLocation: noop,
+      onDropFile: noop,
+      onBrowse: noop
     };
 
     const markup = renderToStaticMarkup(React.createElement(ScanResultPage, props));
 
     expect(markup).toContain("IMG_0002.JPG");
+    expect(markup).toContain("RAW -&gt; JPG（删除 JPG）");
+    expect(markup).not.toContain("以 RAW 为准删除 JPG");
     expect(markup).not.toContain("打开文件位置：IMG_0002.JPG");
   });
 

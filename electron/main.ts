@@ -17,10 +17,7 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     ...APP_WINDOW_BOUNDS,
     title: APP_TITLE,
-    frame: false,
-    titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
     backgroundColor: "#f4efe8",
-    trafficLightPosition: { x: 18, y: 17 },
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -81,11 +78,22 @@ function registerIpcHandlers(): void {
     shell.showItemInFolder(filePath);
   });
 
+  ipcMain.handle("shell:open-external", async (_event, url: string) => {
+    if (typeof url !== "string" || url.length === 0) {
+      throw new Error("链接地址无效。");
+    }
+
+    const parsed = new URL(url);
+    if (!["https:", "mailto:"].includes(parsed.protocol)) {
+      throw new Error("不支持的外部链接协议。");
+    }
+
+    await shell.openExternal(parsed.toString());
+  });
+
   ipcMain.handle("settings:get", () => getSettings());
 
   ipcMain.handle("settings:save", (_event, settings) => saveSettings(settings));
-
-  ipcMain.handle("platform:get", () => process.platform);
 
   ipcMain.handle("updates:state", () => getUpdateState());
 
@@ -100,22 +108,6 @@ function registerIpcHandlers(): void {
     app.quit();
   });
 
-  ipcMain.handle("window:minimize", () => {
-    getActiveWindow().minimize();
-  });
-
-  ipcMain.handle("window:maximize", () => {
-    const window = getActiveWindow();
-    if (window.isMaximized()) {
-      window.unmaximize();
-    } else {
-      window.maximize();
-    }
-  });
-
-  ipcMain.handle("window:close", () => {
-    getActiveWindow().close();
-  });
 }
 
 function getActiveWindow(): BrowserWindow {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "motion/react";
 
 import { DEFAULT_SETTINGS } from "../shared/constants";
-import type { AppSettings, CompareResult, DeleteMode, DeleteOperation, DeleteResult, MediaFile, PlatformName, ScanResult, TrashCapability, UpdateInfo, UpdateProgress, UpdateState } from "../shared/types";
+import type { AppSettings, CompareResult, DeleteMode, DeleteOperation, DeleteResult, MediaFile, ScanResult, TrashCapability, UpdateInfo, UpdateProgress, UpdateState } from "../shared/types";
 import { AppLayout } from "./components/AppLayout";
 import { MotionPage } from "./components/MotionPrimitives";
 import { UpdateDialog } from "./components/UpdateDialog";
@@ -17,7 +17,6 @@ const AUTO_UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>("home");
-  const [platform, setPlatform] = useState<PlatformName>("darwin");
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [rootPath, setRootPath] = useState<string>();
@@ -51,11 +50,6 @@ export default function App() {
       .then(setSettings)
       .catch(() => setSettings(DEFAULT_SETTINGS))
       .finally(() => setSettingsLoaded(true));
-    void api
-      .getPlatform()
-      .then(setPlatform)
-      .catch(() => setPlatform("darwin"));
-
     const dispose = api.onUpdateProgress((progress) => {
       setUpdateState((current) => ({ ...current, status: "downloading", downloaded: progress.downloaded, total: progress.total }));
     });
@@ -90,6 +84,15 @@ export default function App() {
     }
   }
 
+  async function browseDirectoryAndScan(): Promise<void> {
+    const directory = await api.selectDirectory();
+    if (directory) {
+      setRootPath(directory);
+      setError(undefined);
+      await startScan({ rootPathOverride: directory });
+    }
+  }
+
   function acceptDroppedFile(file: File): void {
     const filePath = api.getPathForFile(file);
     if (!filePath) {
@@ -100,8 +103,22 @@ export default function App() {
     setError(undefined);
   }
 
-  async function startScan(options: { preserveDeleteResult?: boolean } = {}): Promise<void> {
-    if (!rootPath) {
+  async function acceptDroppedFileAndScan(file: File): Promise<void> {
+    const filePath = api.getPathForFile(file);
+    if (!filePath) {
+      setError("无法读取拖入目录路径，请点击选择目录。");
+      return;
+    }
+
+    setRootPath(filePath);
+    setError(undefined);
+    await startScan({ rootPathOverride: filePath });
+  }
+
+  async function startScan(options: { preserveDeleteResult?: boolean; rootPathOverride?: string } = {}): Promise<void> {
+    const scanRootPath = options.rootPathOverride ?? rootPath;
+
+    if (!scanRootPath) {
       setError("请先选择照片目录。");
       return;
     }
@@ -117,7 +134,7 @@ export default function App() {
     }
 
     try {
-      const nextScanResult = await api.scanDirectory(rootPath, settings.scan);
+      const nextScanResult = await api.scanDirectory(scanRootPath, settings.scan);
 
       if (nextScanResult.imageFiles.length === 0 || nextScanResult.rawFiles.length === 0) {
         setScanResult(nextScanResult);
@@ -323,7 +340,7 @@ export default function App() {
   }
 
   return (
-    <AppLayout currentPage={currentPage} platform={platform} fontScale={settings.appearance.fontScale} onNavigate={setCurrentPage}>
+    <AppLayout currentPage={currentPage} fontScale={settings.appearance.fontScale} onNavigate={setCurrentPage}>
       <UpdateDialog
         open={updateDialogOpen}
         info={updateInfo}
@@ -350,6 +367,7 @@ export default function App() {
         {currentPage === "scanResult" && (
           <MotionPage key="scanResult">
             <ScanResultPage
+              rootPath={rootPath}
               scanResult={scanResult}
               compareResult={compareResult}
               selectedPaths={selectedPaths}
@@ -370,6 +388,8 @@ export default function App() {
               onCloseConfirm={() => setConfirmOpen(false)}
               onConfirmDelete={() => void confirmDelete()}
               onOpenFileLocation={(filePath) => void openFileLocation(filePath)}
+              onDropFile={(file) => void acceptDroppedFileAndScan(file)}
+              onBrowse={() => void browseDirectoryAndScan()}
               onRescan={() => void startScan()}
               onGoHome={() => setCurrentPage("home")}
             />

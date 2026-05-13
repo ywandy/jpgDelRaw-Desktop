@@ -19,6 +19,7 @@
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=1f2937" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" />
   <img alt="pnpm" src="https://img.shields.io/badge/pnpm-required-F69220?style=flat-square&logo=pnpm&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-16a34a?style=flat-square" />
 </p>
 
 ![Application overview](docs/assets/readme-app-overview.svg)
@@ -180,6 +181,12 @@ pnpm test tests/core.test.ts
 
 RAW Pair Cleaner is a local desktop utility. File scanning, comparison, deletion, settings, and logs are handled locally through the Electron application. The core workflow does not require cloud sync or remote image processing.
 
+## Author And Repository
+
+- Author: ywandy (<https://github.com/ywandy>)
+- GitHub repository: <https://github.com/ywandy/jpgDelRaw-Desktop>
+- Issues: <https://github.com/ywandy/jpgDelRaw-Desktop/issues>
+
 ## Contributing
 
 Contributions are welcome. For a clean change:
@@ -198,4 +205,4 @@ Contributions are welcome. For a clean change:
 
 ## License
 
-This repository does not currently include a license file. Before publishing as an open-source project, choose and add an explicit license such as MIT, Apache-2.0, or GPL-3.0.
+This project is licensed under the MIT License. See [`LICENSE`](LICENSE).

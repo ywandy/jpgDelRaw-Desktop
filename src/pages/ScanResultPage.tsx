@@ -1,7 +1,8 @@
-import { AlertTriangle, CheckCircle2, Database, FileImage, RefreshCw, Trash2, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Database, FileImage, FolderOpen, RefreshCw, Trash2, X, type LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import { useState, type DragEvent } from "react";
 
-import type { CompareResult, DeleteMode, DeleteOperation, DeleteResult, ScanResult, TrashCapability } from "../../shared/types";
+import type { CompareResult, DeleteMode, DeleteOperation, DeleteResult, DirectoryMode, ScanResult, TrashCapability } from "../../shared/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmptyState } from "../components/EmptyState";
 import { FileTable } from "../components/FileTable";
@@ -11,6 +12,7 @@ import { createSelectedFileSummary } from "../lib/fileTree";
 import { formatBytes, formatDirectoryMode } from "../lib/format";
 
 interface ScanResultPageProps {
+  rootPath?: string;
   scanResult?: ScanResult;
   compareResult?: CompareResult;
   selectedPaths: Set<string>;
@@ -31,11 +33,14 @@ interface ScanResultPageProps {
   onDeleteOperationChange: (operation: DeleteOperation) => void;
   onConfirmDelete: () => void;
   onOpenFileLocation: (path: string) => void;
+  onDropFile: (file: File) => void;
+  onBrowse: () => void;
   onRescan: () => void;
   onGoHome: () => void;
 }
 
 export function ScanResultPage({
+  rootPath,
   scanResult,
   compareResult,
   selectedPaths,
@@ -56,6 +61,8 @@ export function ScanResultPage({
   onDeleteOperationChange,
   onConfirmDelete,
   onOpenFileLocation,
+  onDropFile,
+  onBrowse,
   onRescan,
   onGoHome
 }: ScanResultPageProps) {
@@ -89,24 +96,15 @@ export function ScanResultPage({
     <div className="page">
       <MotionStack className="mx-auto flex min-h-0 w-full max-w-[1380px] flex-1 flex-col gap-3 overflow-hidden">
         <MotionItem>
-          <section className="page-header shrink-0">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="type-page-title page-title">扫描完成</h1>
-                <div className="type-page-subtitle mt-1 flex flex-wrap items-center gap-2 text-[var(--color-muted)]">
-                  <span>自动识别为</span>
-                  <span className="status-pill bg-[var(--color-primary-soft)] text-[var(--color-primary-strong)]">{formatDirectoryMode(scanResult.directoryMode)}</span>
-                </div>
-              </div>
-            </div>
-            <motion.button className="btn btn-secondary shrink-0" disabled={scanning} onClick={onRescan} {...getPressMotion(reduced)}>
-              <RefreshCw className={`h-4 w-4 ${scanning ? "animate-spin" : ""}`} />
-              {scanning ? "扫描中" : "重新扫描"}
-            </motion.button>
-          </section>
+          <ResultHeader
+            rootPath={rootPath ?? scanResult.rootPath}
+            directoryMode={scanResult.directoryMode}
+            mode={mode}
+            scanning={scanning}
+            onDropFile={onDropFile}
+            onBrowse={onBrowse}
+            onRescan={onRescan}
+          />
         </MotionItem>
 
         <MotionItem className="grid shrink-0 grid-cols-5 gap-2.5">
@@ -241,6 +239,94 @@ const METRIC_TONES: Record<MetricTone, { accent: string; icon: LucideIcon }> = {
   pending: { accent: "text-[var(--color-warning-strong)]", icon: Trash2 },
   release: { accent: "text-[var(--color-danger)]", icon: Database }
 };
+
+function ResultHeader({
+  rootPath,
+  directoryMode,
+  mode,
+  scanning,
+  onDropFile,
+  onBrowse,
+  onRescan
+}: {
+  rootPath?: string;
+  directoryMode: DirectoryMode;
+  mode: DeleteMode;
+  scanning: boolean;
+  onDropFile: (file: File) => void;
+  onBrowse: () => void;
+  onRescan: () => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const reduced = useReducedMotion();
+  const modeLabel = formatCompactDeleteMode(mode);
+  const dropHint = dragging ? "释放后重新扫描" : "拖入目录或选择目录重新扫描";
+
+  function handleDragOver(event: DragEvent<HTMLElement>): void {
+    event.preventDefault();
+    if (!scanning) setDragging(true);
+  }
+
+  function handleDrop(event: DragEvent<HTMLElement>): void {
+    event.preventDefault();
+    setDragging(false);
+    if (scanning) return;
+    const file = event.dataTransfer.files.item(0);
+    if (file) onDropFile(file);
+  }
+
+  return (
+    <motion.section
+      className={[
+        "panel-compact flex shrink-0 items-center gap-4 border transition",
+        dragging ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]" : "border-[var(--color-border)]",
+        scanning ? "opacity-75" : "hover:border-[var(--color-primary)]"
+      ].join(" ")}
+      aria-label="扫描结果顶部工具栏"
+      onDragOver={handleDragOver}
+      onDragLeave={() => setDragging(false)}
+      onDrop={handleDrop}
+      animate={{ scale: dragging && !reduced ? 1.004 : 1 }}
+      transition={{ duration: reduced ? 0.01 : 0.18, ease: "easeOut" }}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+          <CheckCircle2 className="h-5 w-5" />
+        </div>
+        <div className="min-w-[11rem] shrink-0">
+          <h1 className="type-section-title page-title">扫描完成</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <span className="status-pill bg-[var(--color-primary-soft)] text-[var(--color-primary-strong)]">{formatDirectoryMode(directoryMode)}</span>
+            <span className="status-pill">{modeLabel}</span>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 border-l border-[var(--color-border)] pl-3">
+          <div className="type-caption text-[var(--color-subtle)]">{dropHint}</div>
+          <div className="mt-1 flex min-w-0 items-center gap-2 text-[var(--color-muted)]">
+            <FolderOpen className="h-4 w-4 shrink-0 text-[var(--color-accent-blue)]" />
+            <span className="type-body truncate" title={rootPath}>
+              {rootPath || "当前未选择目录"}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <motion.button className="btn btn-secondary shrink-0" disabled={scanning} onClick={onBrowse} {...getPressMotion(reduced)}>
+          <FolderOpen className="h-4 w-4" />
+          选择目录
+        </motion.button>
+        <motion.button className="btn btn-secondary shrink-0" disabled={scanning} onClick={onRescan} {...getPressMotion(reduced)}>
+          <RefreshCw className={`h-4 w-4 ${scanning ? "animate-spin" : ""}`} />
+          {scanning ? "扫描中" : "重新扫描"}
+        </motion.button>
+      </div>
+    </motion.section>
+  );
+}
+
+function formatCompactDeleteMode(mode: DeleteMode): string {
+  return mode === "jpg_as_source_delete_raw" ? "JPG -> RAW（删除 RAW）" : "RAW -> JPG（删除 JPG）";
+}
 
 function ResultMetric({ label, value, helper, tone }: { label: string; value: string | number; helper: string; tone: MetricTone }) {
   const reduced = useReducedMotion();

@@ -5,7 +5,6 @@ import type {
   DeleteMode,
   DeleteResult,
   MediaFile,
-  PlatformName,
   ScanOptions,
   ScanResult,
   TrashCapability,
@@ -23,18 +22,15 @@ declare global {
       moveToTrash: (files: MediaFile[], context: DeleteContext) => Promise<DeleteResult>;
       getTrashCapability: (targetPath: string) => Promise<TrashCapability>;
       showItemInFolder: (filePath: string) => Promise<void>;
+      openExternal: (url: string) => Promise<void>;
       getSettings: () => Promise<AppSettings>;
       saveSettings: (settings: AppSettings) => Promise<void>;
-      getPlatform: () => Promise<PlatformName>;
       getPathForFile: (file: File) => string;
       getUpdateState: () => Promise<UpdateState>;
       checkForUpdates: () => Promise<UpdateCheckResult>;
       downloadUpdate: () => Promise<void>;
       installUpdate: () => Promise<void>;
       onUpdateProgress: (callback: (progress: UpdateProgress) => void) => () => void;
-      windowMinimize: () => Promise<void>;
-      windowMaximize: () => Promise<void>;
-      windowClose: () => Promise<void>;
     };
   }
 }
