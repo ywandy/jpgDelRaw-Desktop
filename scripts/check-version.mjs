@@ -19,7 +19,7 @@ if (mismatches.length > 0) {
 console.log(`Version check passed: ${expected}`);
 
 function getExpectedVersion() {
-  const tag = process.env.GITHUB_REF_NAME || process.argv[2];
+  const tag = process.argv[2] || (process.env.GITHUB_REF_TYPE === "tag" ? process.env.GITHUB_REF_NAME : undefined);
   if (!tag) return readJson("package.json").version;
   const match = tag.match(/^v(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)$/);
   if (!match) {
