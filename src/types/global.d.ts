@@ -8,6 +8,7 @@ import type {
   PlatformName,
   ScanOptions,
   ScanResult,
+  TrashCapability,
   UpdateCheckResult,
   UpdateProgress,
   UpdateState
@@ -20,6 +21,7 @@ declare global {
       scanDirectory: (rootPath: string, options: ScanOptions) => Promise<ScanResult>;
       compareFiles: (scanResult: ScanResult, mode: DeleteMode) => Promise<CompareResult>;
       moveToTrash: (files: MediaFile[], context: DeleteContext) => Promise<DeleteResult>;
+      getTrashCapability: (targetPath: string) => Promise<TrashCapability>;
       showItemInFolder: (filePath: string) => Promise<void>;
       getSettings: () => Promise<AppSettings>;
       saveSettings: (settings: AppSettings) => Promise<void>;

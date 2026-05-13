@@ -62,11 +62,6 @@ export function SettingsPage({ settings, saving, updateInfo, updateState, onSave
 
             <SettingsSection title="删除设置">
             <ToggleRow
-              label="输入确认文本"
-              checked={draft.delete.requireConfirmText}
-              onChange={(value) => setDraft({ ...draft, delete: { ...draft.delete, requireConfirmText: value } })}
-            />
-            <ToggleRow
               label="删除后生成日志"
               checked={draft.delete.generateLog}
               onChange={(value) => setDraft({ ...draft, delete: { ...draft.delete, generateLog: value } })}

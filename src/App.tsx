@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { DEFAULT_SETTINGS } from "../shared/constants";
-import type { AppSettings, CompareResult, DeleteMode, DeleteResult, MediaFile, PlatformName, ScanResult, UpdateInfo, UpdateProgress, UpdateState } from "../shared/types";
+import type { AppSettings, CompareResult, DeleteMode, DeleteOperation, DeleteResult, MediaFile, PlatformName, ScanResult, TrashCapability, UpdateInfo, UpdateProgress, UpdateState } from "../shared/types";
 import { AppLayout } from "./components/AppLayout";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { api } from "./lib/api";
@@ -27,6 +27,13 @@ export default function App() {
   const [error, setError] = useState<string>();
   const [scanning, setScanning] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [checkingTrashCapability, setCheckingTrashCapability] = useState(false);
+  const [trashCapability, setTrashCapability] = useState<TrashCapability>({
+    status: "unknown",
+    checkedPath: "",
+    reason: "打开确认弹窗后检测当前目录是否支持系统回收站。"
+  });
+  const [deleteOperation, setDeleteOperation] = useState<DeleteOperation>("trash");
   const [savingSettings, setSavingSettings] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo>();
@@ -163,6 +170,36 @@ export default function App() {
     });
   }
 
+  async function openDeleteConfirm(): Promise<void> {
+    if (!compareResult || !scanResult) return;
+    const files = selectedMediaFiles(compareResult, selectedPaths);
+    if (files.length === 0) return;
+
+    setConfirmOpen(true);
+    setCheckingTrashCapability(true);
+    setDeleteOperation("trash");
+    setTrashCapability({
+      status: "unknown",
+      checkedPath: files[0].path,
+      reason: "正在检测当前目录是否支持系统回收站..."
+    });
+
+    try {
+      const capability = await api.getTrashCapability(files[0].path);
+      setTrashCapability(capability);
+      setDeleteOperation(capability.status === "unavailable" ? "permanent" : "trash");
+    } catch (capabilityError) {
+      setTrashCapability({
+        status: "unknown",
+        checkedPath: files[0].path,
+        reason: `无法完成回收站检测：${getErrorMessage(capabilityError)}`
+      });
+      setDeleteOperation("trash");
+    } finally {
+      setCheckingTrashCapability(false);
+    }
+  }
+
   async function confirmDelete(): Promise<void> {
     if (!compareResult || !scanResult || selectedSize < 0) return;
     if (updateState.status === "downloading" || updateState.status === "installing") {
@@ -176,7 +213,8 @@ export default function App() {
     try {
       const result = await api.moveToTrash(files, {
         mode,
-        rootPath: scanResult.rootPath
+        rootPath: scanResult.rootPath,
+        operation: deleteOperation
       });
       setDeleteResult(result);
       setSelectedPaths(new Set(result.items.filter((item) => item.status === "failed").map((item) => item.path)));
@@ -307,7 +345,6 @@ export default function App() {
           compareResult={compareResult}
           selectedPaths={selectedPaths}
           error={error}
-          requireConfirmText={settings.delete.requireConfirmText}
           deleting={deleting}
           deleteResult={deleteResult}
           confirmOpen={confirmOpen}
@@ -315,7 +352,11 @@ export default function App() {
           onToggleFile={toggleFile}
           onToggleAll={toggleAll}
           onSetFilesSelected={setFilesSelected}
-          onOpenConfirm={() => setConfirmOpen(true)}
+          trashCapability={trashCapability}
+          deleteOperation={deleteOperation}
+          checkingTrashCapability={checkingTrashCapability}
+          onDeleteOperationChange={setDeleteOperation}
+          onOpenConfirm={() => void openDeleteConfirm()}
           onCloseConfirm={() => setConfirmOpen(false)}
           onConfirmDelete={() => void confirmDelete()}
           onOpenFileLocation={(filePath) => void openFileLocation(filePath)}

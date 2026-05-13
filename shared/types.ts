@@ -4,6 +4,10 @@ export type DirectoryMode = "auto" | "separate_dirs" | "mixed_dir" | "manual";
 
 export type MediaKind = "image" | "raw" | "sidecar" | "unknown";
 
+export type DeleteOperation = "trash" | "permanent";
+
+export type TrashCapabilityStatus = "available" | "unavailable" | "unknown";
+
 export type CompareConflictReason = "duplicate_image" | "duplicate_raw" | "ambiguous_match";
 
 export type PlatformName = "darwin" | "win32" | "linux" | NodeJS.Platform;
@@ -63,12 +67,13 @@ export interface CompareResult {
 export interface DeleteContext {
   mode: DeleteMode;
   rootPath: string;
+  operation?: DeleteOperation;
 }
 
 export interface DeleteResultItem {
   path: string;
   size: number;
-  status: "moved_to_trash" | "failed";
+  status: "moved_to_trash" | "deleted_permanently" | "failed";
   error?: string;
 }
 
@@ -77,11 +82,18 @@ export interface DeleteResult {
   finishedAt: string;
   mode: DeleteMode;
   rootPath: string;
+  operation: DeleteOperation;
   total: number;
   success: number;
   failed: number;
   logPath?: string;
   items: DeleteResultItem[];
+}
+
+export interface TrashCapability {
+  status: TrashCapabilityStatus;
+  checkedPath: string;
+  reason?: string;
 }
 
 export interface UpdateSettings {
@@ -127,7 +139,6 @@ export interface AppSettings {
     ignoreCase: boolean;
   };
   delete: {
-    requireConfirmText: boolean;
     generateLog: boolean;
   };
   sidecar: {

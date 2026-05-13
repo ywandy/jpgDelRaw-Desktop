@@ -36,8 +36,7 @@ function mergeSettings(settings: Partial<AppSettings>): AppSettings {
       ...settings.scan
     },
     delete: {
-      ...DEFAULT_SETTINGS.delete,
-      ...settings.delete
+      generateLog: settings.delete?.generateLog ?? DEFAULT_SETTINGS.delete.generateLog
     },
     sidecar: {
       ...DEFAULT_SETTINGS.sidecar,

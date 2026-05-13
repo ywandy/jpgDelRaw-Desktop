@@ -6,7 +6,7 @@ import { describe, expect, test } from "vitest";
 import { compareFiles } from "../electron/services/compareService";
 import { scanDirectory } from "../electron/services/scanService";
 import { getSettings, saveSettings } from "../electron/services/settingsService";
-import { moveFilesToTrash } from "../electron/services/trashService";
+import { getTrashCapability, moveFilesToTrash } from "../electron/services/trashService";
 import { APP_WINDOW_BOUNDS, DEFAULT_SETTINGS } from "../shared/constants";
 import { getFileKey, getMediaKind } from "../shared/fileUtils";
 import type { DeleteContext, MediaFile, ScanResult } from "../shared/types";
@@ -154,8 +154,53 @@ describe("moveFilesToTrash", () => {
       expect(trashed).toEqual([files[0].path]);
       expect(result.success).toBe(1);
       expect(result.failed).toBe(0);
+      expect(result.operation).toBe("trash");
       expect(result.logPath).toBe(path.join(userDataPath, "logs", "delete-log-2026-05-09-10-30-00.json"));
     });
+  });
+
+  test("permanently deletes selected files when requested", async () => {
+    await withTempDir(async (userDataPath) => {
+      const deleted: string[] = [];
+      const files = [mediaFile("IMG_0101.CR3", "raw", 256)];
+      const context: DeleteContext = {
+        mode: "jpg_as_source_delete_raw",
+        rootPath: "/photos",
+        operation: "permanent"
+      };
+
+      const result = await moveFilesToTrash(files, context, {
+        userDataPath,
+        deleteFile: async (filePath) => {
+          deleted.push(filePath);
+        },
+        generateLog: false,
+        now: () => new Date("2026-05-09T10:30:00.000Z")
+      });
+
+      expect(deleted).toEqual([files[0].path]);
+      expect(result.operation).toBe("permanent");
+      expect(result.items[0].status).toBe("deleted_permanently");
+      expect(result.success).toBe(1);
+      expect(result.failed).toBe(0);
+      expect(result.logPath).toBeUndefined();
+    });
+  });
+
+  test("detects unavailable trash for common network or NAS paths", async () => {
+    const windowsNetwork = await getTrashCapability("//nas/photos/IMG_0101.CR3", {
+      platform: "win32"
+    });
+    const macNetworkVolume = await getTrashCapability("/Volumes/NAS/photos/IMG_0101.CR3", {
+      platform: "darwin",
+      uid: 501,
+      accessPath: async () => {
+        throw new Error("not found");
+      }
+    });
+
+    expect(windowsNetwork.status).toBe("unavailable");
+    expect(macNetworkVolume.status).toBe("unavailable");
   });
 });
 
@@ -183,6 +228,7 @@ describe("settingsService", () => {
       expect(settings.appearance).toEqual({ fontScale: "medium" });
       expect(settings.scan.recursive).toBe(false);
       expect(settings.delete.generateLog).toBe(false);
+      expect((settings.delete as Record<string, unknown>).requireConfirmText).toBeUndefined();
     });
   });
 

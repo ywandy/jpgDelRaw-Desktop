@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld("rawPairCleaner", {
   scanDirectory: (rootPath: string, options: unknown) => ipcRenderer.invoke("files:scan-directory", rootPath, options),
   compareFiles: (scanResult: unknown, mode: string) => ipcRenderer.invoke("files:compare", scanResult, mode),
   moveToTrash: (files: unknown[], context: unknown) => ipcRenderer.invoke("files:move-to-trash", files, context),
+  getTrashCapability: (targetPath: string) => ipcRenderer.invoke("files:get-trash-capability", targetPath),
   showItemInFolder: (filePath: string) => ipcRenderer.invoke("files:show-item-in-folder", filePath),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   saveSettings: (settings: unknown) => ipcRenderer.invoke("settings:save", settings),

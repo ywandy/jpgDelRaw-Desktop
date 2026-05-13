@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, Database, FileImage, RefreshCw, Trash2, X, type LucideIcon } from "lucide-react";
 
-import type { CompareResult, DeleteMode, DeleteResult, ScanResult } from "../../shared/types";
+import type { CompareResult, DeleteMode, DeleteOperation, DeleteResult, ScanResult, TrashCapability } from "../../shared/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmptyState } from "../components/EmptyState";
 import { FileTable } from "../components/FileTable";
@@ -13,16 +13,19 @@ interface ScanResultPageProps {
   compareResult?: CompareResult;
   selectedPaths: Set<string>;
   error?: string;
-  requireConfirmText: boolean;
   deleting: boolean;
   deleteResult?: DeleteResult;
   confirmOpen: boolean;
   mode: DeleteMode;
+  trashCapability: TrashCapability;
+  deleteOperation: DeleteOperation;
+  checkingTrashCapability: boolean;
   onToggleFile: (path: string) => void;
   onToggleAll: () => void;
   onSetFilesSelected: (paths: string[], selected: boolean) => void;
   onOpenConfirm: () => void;
   onCloseConfirm: () => void;
+  onDeleteOperationChange: (operation: DeleteOperation) => void;
   onConfirmDelete: () => void;
   onOpenFileLocation: (path: string) => void;
   onRescan: () => void;
@@ -34,16 +37,19 @@ export function ScanResultPage({
   compareResult,
   selectedPaths,
   error,
-  requireConfirmText,
   deleting,
   deleteResult,
   confirmOpen,
   mode,
+  trashCapability,
+  deleteOperation,
+  checkingTrashCapability,
   onToggleFile,
   onToggleAll,
   onSetFilesSelected,
   onOpenConfirm,
   onCloseConfirm,
+  onDeleteOperationChange,
   onConfirmDelete,
   onOpenFileLocation,
   onRescan,
@@ -104,8 +110,9 @@ export function ScanResultPage({
         </section>
 
         {deleteResult && (
-          <WarningPanel title={deleteResult.failed > 0 ? "部分文件移动失败" : "删除完成"} tone={deleteResult.failed > 0 ? "red" : "blue"}>
-            成功 {deleteResult.success} 个，失败 {deleteResult.failed} 个{deleteResult.logPath ? `，日志：${deleteResult.logPath}` : ""}。
+          <WarningPanel title={deleteResult.failed > 0 ? "部分文件删除失败" : "删除完成"} tone={deleteResult.failed > 0 ? "red" : "blue"}>
+            {deleteResult.operation === "permanent" ? "永久删除" : "移动到回收站"}成功 {deleteResult.success} 个，失败 {deleteResult.failed} 个
+            {deleteResult.logPath ? `，日志：${deleteResult.logPath}` : ""}。
           </WarningPanel>
         )}
 
@@ -132,7 +139,7 @@ export function ScanResultPage({
             <div className="flex shrink-0 flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="type-section-title text-[var(--color-heading)]">待删除文件</h2>
-                <p className="type-body mt-0.5 text-[var(--color-muted)]">以下文件将被移动到系统回收站，请仔细确认后执行删除操作。</p>
+                <p className="type-body mt-0.5 text-[var(--color-muted)]">以下文件将在确认弹窗中选择删除方式，请仔细确认后执行删除操作。</p>
               </div>
               <div className="status-pill">
                 已选 {selectedSummary.count}/{compareResult.deleteCandidates.length}
@@ -158,7 +165,7 @@ export function ScanResultPage({
             </div>
             <div className="min-w-0">
               <div className="type-ui">即将移动 {selectedSummary.count} 个文件到系统回收站</div>
-              <div className="type-body mt-0.5">您可以在回收站中还原这些文件，或清空回收站后永久删除。</div>
+              <div className="type-body mt-0.5">默认优先移动到系统回收站；如果当前目录不支持回收站，确认弹窗会切换为永久删除提示。</div>
             </div>
           </section>
         )}
@@ -190,9 +197,12 @@ export function ScanResultPage({
         count={selectedFiles.length}
         totalSize={selectedSummary.size}
         mode={mode}
-        requireConfirmText={requireConfirmText}
+        moveToTrash={deleteOperation === "trash"}
+        trashCapability={trashCapability}
+        checkingTrashCapability={checkingTrashCapability}
         busy={deleting}
         onCancel={onCloseConfirm}
+        onMoveToTrashChange={(moveToTrash) => onDeleteOperationChange(moveToTrash ? "trash" : "permanent")}
         onConfirm={onConfirmDelete}
       />
     </div>

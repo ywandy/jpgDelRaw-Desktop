@@ -6,7 +6,7 @@ import type { DeleteContext, DeleteMode, MediaFile, ScanOptions, ScanResult } fr
 import { compareFiles } from "./services/compareService.js";
 import { scanDirectory } from "./services/scanService.js";
 import { getSettings, saveSettings } from "./services/settingsService.js";
-import { moveFilesToTrash } from "./services/trashService.js";
+import { getTrashCapability, moveFilesToTrash } from "./services/trashService.js";
 import { checkForUpdates, downloadUpdate, getUpdateState, installStagedUpdate } from "./services/updateService.js";
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL ?? "http://127.0.0.1:5173";
@@ -67,6 +67,10 @@ function registerIpcHandlers(): void {
     return moveFilesToTrash(files, context, {
       generateLog: settings.delete.generateLog
     });
+  });
+
+  ipcMain.handle("files:get-trash-capability", (_event, targetPath: string) => {
+    return getTrashCapability(targetPath);
   });
 
   ipcMain.handle("files:show-item-in-folder", (_event, filePath: string) => {

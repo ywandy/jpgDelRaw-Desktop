@@ -10,6 +10,7 @@ export const api: Window["rawPairCleaner"] =
     scanDirectory: () => missingPreload(),
     compareFiles: () => missingPreload(),
     moveToTrash: () => missingPreload(),
+    getTrashCapability: () => missingPreload(),
     showItemInFolder: () => missingPreload(),
     getSettings: () => Promise.resolve(DEFAULT_SETTINGS),
     saveSettings: () => missingPreload(),

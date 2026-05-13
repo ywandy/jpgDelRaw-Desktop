@@ -49,11 +49,13 @@ describe("ScanResultPage", () => {
       scanResult,
       compareResult,
       selectedPaths: new Set([raw.path]),
-      requireConfirmText: true,
       deleting: false,
       deleteResult: undefined,
       confirmOpen: false,
       mode: "jpg_as_source_delete_raw",
+      trashCapability: { status: "available", checkedPath: raw.path },
+      deleteOperation: "trash",
+      checkingTrashCapability: false,
       onRescan: noop,
       onGoHome: noop,
       onToggleFile: noop,
@@ -61,6 +63,7 @@ describe("ScanResultPage", () => {
       onSetFilesSelected: noop,
       onOpenConfirm: noop,
       onCloseConfirm: noop,
+      onDeleteOperationChange: noop,
       onConfirmDelete: noop,
       onOpenFileLocation: noop
     };
@@ -70,7 +73,7 @@ describe("ScanResultPage", () => {
     expect(markup).toContain("扫描完成");
     expect(markup).toContain("JPG 类文件");
     expect(markup).toContain("IMG_0001.CR3");
-    expect(markup).toContain("即将移动 1 个文件到系统回收站");
+    expect(markup).toContain("默认优先移动到系统回收站");
     expect(markup).toContain("打开文件位置：IMG_0001.CR3");
     expect(markup).not.toContain("查看待删除文件");
   });
@@ -103,11 +106,13 @@ describe("ScanResultPage", () => {
       compareResult,
       selectedPaths: new Set([image.path]),
       error: undefined,
-      requireConfirmText: true,
       deleting: false,
       deleteResult: undefined,
       confirmOpen: false,
       mode: "raw_as_source_delete_jpg",
+      trashCapability: { status: "available", checkedPath: image.path },
+      deleteOperation: "trash",
+      checkingTrashCapability: false,
       onRescan: noop,
       onGoHome: noop,
       onToggleFile: noop,
@@ -115,6 +120,7 @@ describe("ScanResultPage", () => {
       onSetFilesSelected: noop,
       onOpenConfirm: noop,
       onCloseConfirm: noop,
+      onDeleteOperationChange: noop,
       onConfirmDelete: noop,
       onOpenFileLocation: noop
     };
