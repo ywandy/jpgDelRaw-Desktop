@@ -99,6 +99,7 @@ export interface TrashCapability {
 export interface UpdateSettings {
   autoCheckOnStartup: boolean;
   lastCheckedAt?: string;
+  releaseProxyPrefix: string;
 }
 
 export interface UpdateInfo {

@@ -74,6 +74,20 @@ export function SettingsPage({ settings, saving, updateInfo, updateState, onSave
               checked={draft.updates.autoCheckOnStartup}
               onChange={(value) => setDraft({ ...draft, updates: { ...draft.updates, autoCheckOnStartup: value } })}
             />
+            <div className="min-h-14 py-3">
+              <label className="type-ui text-[var(--color-text)]" htmlFor="release-proxy-prefix">
+                Release 代理前缀
+              </label>
+              <input
+                id="release-proxy-prefix"
+                className="input-compact mt-2 px-3"
+                value={draft.updates.releaseProxyPrefix}
+                onChange={(event) => setDraft({ ...draft, updates: { ...draft.updates, releaseProxyPrefix: event.target.value } })}
+              />
+              <div className="type-caption mt-1.5 text-[var(--color-muted)]">
+                Release 文件下载地址会自动加上此前缀；检查更新清单不走代理。
+              </div>
+            </div>
             <div className="flex min-h-14 flex-wrap items-center justify-between gap-4 py-3">
               <div>
                 <div className="type-ui text-[var(--color-text)]">手动检查更新</div>

@@ -7,7 +7,8 @@ import { compareFiles } from "../electron/services/compareService";
 import { scanDirectory } from "../electron/services/scanService";
 import { getSettings, saveSettings } from "../electron/services/settingsService";
 import { getTrashCapability, moveFilesToTrash } from "../electron/services/trashService";
-import { APP_WINDOW_BOUNDS, DEFAULT_SETTINGS } from "../shared/constants";
+import { getDownloadUrl } from "../electron/services/updateService";
+import { APP_WINDOW_BOUNDS, DEFAULT_RELEASE_PROXY_PREFIX, DEFAULT_SETTINGS } from "../shared/constants";
 import { getFileKey, getMediaKind } from "../shared/fileUtils";
 import type { DeleteContext, MediaFile, ScanResult } from "../shared/types";
 
@@ -228,6 +229,7 @@ describe("settingsService", () => {
       expect(settings.appearance).toEqual({ fontScale: "medium" });
       expect(settings.scan.recursive).toBe(false);
       expect(settings.delete.generateLog).toBe(false);
+      expect(settings.updates.releaseProxyPrefix).toBe(DEFAULT_RELEASE_PROXY_PREFIX);
       expect((settings.delete as Record<string, unknown>).requireConfirmText).toBeUndefined();
     });
   });
@@ -248,5 +250,43 @@ describe("settingsService", () => {
 
       expect(settings.appearance.fontScale).toBe("large");
     });
+  });
+
+  test("restores the default release proxy prefix when saved empty", async () => {
+    await withTempDir(async (userDataPath) => {
+      await saveSettings(
+        {
+          ...DEFAULT_SETTINGS,
+          updates: {
+            ...DEFAULT_SETTINGS.updates,
+            releaseProxyPrefix: ""
+          }
+        },
+        userDataPath
+      );
+
+      const settings = await getSettings(userDataPath);
+
+      expect(settings.updates.releaseProxyPrefix).toBe(DEFAULT_RELEASE_PROXY_PREFIX);
+    });
+  });
+});
+
+describe("updateService", () => {
+  const releaseAssetUrl = "https://github.com/ywandy/jpgDelRaw-Desktop/releases/download/v1.0.13/raw-pair-cleaner-1.0.13-app.asar";
+
+  test("prefixes GitHub release downloads with the configured proxy", () => {
+    expect(getDownloadUrl(releaseAssetUrl)).toBe(`${DEFAULT_RELEASE_PROXY_PREFIX}${releaseAssetUrl}`);
+    expect(getDownloadUrl(releaseAssetUrl, "https://gh-pxy.ywandy.top")).toBe(`${DEFAULT_RELEASE_PROXY_PREFIX}${releaseAssetUrl}`);
+  });
+
+  test("can leave release downloads direct when proxy is disabled explicitly", () => {
+    expect(getDownloadUrl(releaseAssetUrl, " ")).toBe(releaseAssetUrl);
+  });
+
+  test("does not prefix already proxied or non-release URLs", () => {
+    const proxiedUrl = `${DEFAULT_RELEASE_PROXY_PREFIX}${releaseAssetUrl}`;
+    expect(getDownloadUrl(proxiedUrl)).toBe(proxiedUrl);
+    expect(getDownloadUrl("https://example.com/file.zip")).toBe("https://example.com/file.zip");
   });
 });

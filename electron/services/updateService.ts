@@ -4,7 +4,7 @@ import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { spawn } from "node:child_process";
 
-import { APP_VERSION } from "../../shared/constants.js";
+import { APP_VERSION, DEFAULT_RELEASE_PROXY_PREFIX } from "../../shared/constants.js";
 import type { UpdateCheckResult, UpdateProgress, UpdateState } from "../../shared/types.js";
 
 const DEFAULT_MANIFEST_URL = "https://github.com/ywandy/jpgDelRaw-Desktop/releases/latest/download/latest-asar.json";
@@ -31,6 +31,7 @@ interface UpdateServiceOptions {
   executablePath: string;
   packaged: boolean;
   manifestUrl?: string;
+  releaseProxyPrefix?: string;
   helperPath?: string;
 }
 
@@ -45,8 +46,9 @@ export function getUpdateState(): UpdateState {
 export async function checkForUpdates(options: UpdateServiceOptions): Promise<UpdateCheckResult> {
   state = { status: "checking" };
   try {
-    await appendUpdateLog(options, `checking current=${APP_VERSION} manifestUrl=${options.manifestUrl ?? DEFAULT_MANIFEST_URL}`);
-    const manifest = await fetchManifest(options.manifestUrl ?? DEFAULT_MANIFEST_URL);
+    const manifestUrl = options.manifestUrl ?? DEFAULT_MANIFEST_URL;
+    await appendUpdateLog(options, `checking current=${APP_VERSION} manifestUrl=${manifestUrl}`);
+    const manifest = await fetchManifest(manifestUrl);
     const asset = manifest.assets?.appAsar;
     if (!manifest.version || !asset?.url) {
       throw new Error("更新清单缺少版本或下载地址。 ");
@@ -99,12 +101,14 @@ export async function downloadUpdate(options: UpdateServiceOptions, onProgress?:
 
   try {
     await appendUpdateLog(options, `----- download update ${manifest.version} -----`);
-    await appendUpdateLog(options, `current=${APP_VERSION} manifestUrl=${options.manifestUrl ?? DEFAULT_MANIFEST_URL}`);
-    await appendUpdateLog(options, `assetUrl=${asset.url}`);
+    const manifestUrl = options.manifestUrl ?? DEFAULT_MANIFEST_URL;
+    const assetUrl = getDownloadUrl(asset.url, options.releaseProxyPrefix);
+    await appendUpdateLog(options, `current=${APP_VERSION} manifestUrl=${manifestUrl}`);
+    await appendUpdateLog(options, `assetUrl=${assetUrl}`);
     if (asset.sha256) await appendUpdateLog(options, `manifestSha256=${asset.sha256} (not enforced)`);
     await cleanupStaging(updateDir, options);
 
-    const result = await downloadFile(asset.url, tempPath, (progress) => {
+    const result = await downloadFile(assetUrl, tempPath, (progress) => {
       state = { status: "downloading", info: manifestToInfo(manifest), downloaded: progress.downloaded, total: progress.total };
       onProgress?.(progress);
     });
@@ -118,7 +122,7 @@ export async function downloadUpdate(options: UpdateServiceOptions, onProgress?:
     const finalSize = (await stat(finalPath)).size;
     await writeFile(
       metadataPath,
-      `${JSON.stringify({ version: manifest.version, assetUrl: asset.url, sha256: asset.sha256, size: finalSize, downloadedAt: new Date().toISOString() }, null, 2)}\n`,
+      `${JSON.stringify({ version: manifest.version, assetUrl, originalAssetUrl: asset.url, sha256: asset.sha256, size: finalSize, downloadedAt: new Date().toISOString() }, null, 2)}\n`,
       "utf8"
     );
     await appendUpdateLog(options, `ready staged=${finalPath} size=${finalSize}`);
@@ -178,6 +182,15 @@ async function fetchManifest(url: string): Promise<UpdateManifest> {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`检查更新失败：HTTP ${response.status}`);
   return (await response.json()) as UpdateManifest;
+}
+
+export function getDownloadUrl(url: string, releaseProxyPrefix = DEFAULT_RELEASE_PROXY_PREFIX): string {
+  const normalizedPrefix = normalizeProxyPrefix(releaseProxyPrefix);
+  if (!normalizedPrefix || !isGithubReleaseUrl(url) || url.startsWith(normalizedPrefix)) {
+    return url;
+  }
+
+  return `${normalizedPrefix}${url}`;
 }
 
 async function downloadFile(url: string, destination: string, onProgress: (progress: UpdateProgress) => void): Promise<{ downloaded: number; total?: number; contentType?: string }> {
@@ -316,6 +329,21 @@ function compareVersions(a: string, b: string): number {
 
 function normalizeVersion(version: string): number[] {
   return version.replace(/^v/, "").split(/[.-]/).map((part) => Number.parseInt(part, 10) || 0);
+}
+
+function isGithubReleaseUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === "github.com" && parsed.pathname.includes("/releases/");
+  } catch {
+    return false;
+  }
+}
+
+function normalizeProxyPrefix(prefix: string): string {
+  const trimmed = prefix.trim();
+  if (!trimmed) return "";
+  return trimmed.endsWith("/") ? trimmed : `${trimmed}/`;
 }
 
 function getErrorMessage(error: unknown): string {

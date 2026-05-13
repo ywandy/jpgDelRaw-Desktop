@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { DEFAULT_SETTINGS } from "../../shared/constants.js";
+import { DEFAULT_RELEASE_PROXY_PREFIX, DEFAULT_SETTINGS } from "../../shared/constants.js";
 import type { AppSettings } from "../../shared/types.js";
 
 export async function getSettings(userDataPath?: string): Promise<AppSettings> {
@@ -44,7 +44,8 @@ function mergeSettings(settings: Partial<AppSettings>): AppSettings {
     },
     updates: {
       ...DEFAULT_SETTINGS.updates,
-      ...settings.updates
+      ...settings.updates,
+      releaseProxyPrefix: settings.updates?.releaseProxyPrefix?.trim() || DEFAULT_RELEASE_PROXY_PREFIX
     }
   };
 }

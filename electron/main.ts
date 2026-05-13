@@ -89,14 +89,14 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle("updates:state", () => getUpdateState());
 
-  ipcMain.handle("updates:check", () => checkForUpdates(getUpdateOptions()));
+  ipcMain.handle("updates:check", async () => checkForUpdates(await getUpdateOptions()));
 
   ipcMain.handle("updates:download", async (event) => {
-    return downloadUpdate(getUpdateOptions(), (progress) => event.sender.send("updates:progress", progress));
+    return downloadUpdate(await getUpdateOptions(), (progress) => event.sender.send("updates:progress", progress));
   });
 
   ipcMain.handle("updates:install", async () => {
-    await installStagedUpdate(getUpdateOptions());
+    await installStagedUpdate(await getUpdateOptions());
     app.quit();
   });
 
@@ -122,13 +122,15 @@ function getActiveWindow(): BrowserWindow {
   return BrowserWindow.getFocusedWindow() ?? mainWindow ?? BrowserWindow.getAllWindows()[0];
 }
 
-function getUpdateOptions() {
+async function getUpdateOptions() {
+  const settings = await getSettings();
   return {
     userDataPath: app.getPath("userData"),
     resourcesPath: process.resourcesPath,
     executablePath: process.execPath,
     packaged: app.isPackaged,
-    manifestUrl: process.env.RAW_PAIR_CLEANER_UPDATE_URL
+    manifestUrl: process.env.RAW_PAIR_CLEANER_UPDATE_URL,
+    releaseProxyPrefix: settings.updates.releaseProxyPrefix
   };
 }
 

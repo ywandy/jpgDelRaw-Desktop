@@ -98,7 +98,7 @@ export default function App() {
     setError(undefined);
   }
 
-  async function startScan(): Promise<void> {
+  async function startScan(options: { preserveDeleteResult?: boolean } = {}): Promise<void> {
     if (!rootPath) {
       setError("请先选择照片目录。");
       return;
@@ -110,7 +110,9 @@ export default function App() {
 
     setScanning(true);
     setError(undefined);
-    setDeleteResult(undefined);
+    if (!options.preserveDeleteResult) {
+      setDeleteResult(undefined);
+    }
 
     try {
       const nextScanResult = await api.scanDirectory(rootPath, settings.scan);
@@ -219,6 +221,7 @@ export default function App() {
       setDeleteResult(result);
       setSelectedPaths(new Set(result.items.filter((item) => item.status === "failed").map((item) => item.path)));
       setConfirmOpen(false);
+      await startScan({ preserveDeleteResult: true });
     } catch (deleteError) {
       setError(getErrorMessage(deleteError));
     } finally {
