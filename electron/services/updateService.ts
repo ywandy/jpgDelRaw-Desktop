@@ -50,7 +50,7 @@ export function getUpdateState(): UpdateState {
 export async function checkForUpdates(options: UpdateServiceOptions): Promise<UpdateCheckResult> {
   state = { status: "checking" };
   try {
-    const manifestUrl = options.manifestUrl ?? DEFAULT_MANIFEST_URL;
+    const manifestUrl = getUpdateManifestUrl(options);
     await appendUpdateLog(options, `checking current=${APP_VERSION} manifestUrl=${manifestUrl}`);
     const manifest = await fetchManifest(manifestUrl);
     const asset = manifest.assets?.appAsar;
@@ -107,7 +107,7 @@ export async function downloadUpdate(options: UpdateServiceOptions, onProgress?:
 
   try {
     await appendUpdateLog(options, `----- download update ${manifest.version} -----`);
-    const manifestUrl = options.manifestUrl ?? DEFAULT_MANIFEST_URL;
+    const manifestUrl = getUpdateManifestUrl(options);
     const assetUrl = getDownloadUrl(asset.url, options.releaseProxyPrefix);
     await appendUpdateLog(options, `current=${APP_VERSION} manifestUrl=${manifestUrl}`);
     await appendUpdateLog(options, `assetUrl=${assetUrl}`);
@@ -232,6 +232,10 @@ export function getDownloadUrl(url: string, releaseProxyPrefix = DEFAULT_RELEASE
   }
 
   return `${normalizedPrefix}${url}`;
+}
+
+function getUpdateManifestUrl(options: UpdateServiceOptions): string {
+  return getDownloadUrl(options.manifestUrl ?? DEFAULT_MANIFEST_URL, options.releaseProxyPrefix);
 }
 
 export function getGithubReleaseApiUrl(assetUrl: string): string | undefined {

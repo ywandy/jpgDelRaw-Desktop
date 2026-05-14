@@ -274,10 +274,12 @@ describe("settingsService", () => {
 
 describe("updateService", () => {
   const releaseAssetUrl = "https://github.com/ywandy/jpgDelRaw-Desktop/releases/download/v1.0.13/raw-pair-cleaner-1.0.13-app.asar";
+  const releaseManifestUrl = "https://github.com/ywandy/jpgDelRaw-Desktop/releases/latest/download/latest-asar.json";
 
   test("prefixes GitHub release downloads with the configured proxy", () => {
     expect(getDownloadUrl(releaseAssetUrl)).toBe(`${DEFAULT_RELEASE_PROXY_PREFIX}${releaseAssetUrl}`);
     expect(getDownloadUrl(releaseAssetUrl, "https://gh-pxy.ywandy.top")).toBe(`${DEFAULT_RELEASE_PROXY_PREFIX}${releaseAssetUrl}`);
+    expect(getDownloadUrl(releaseManifestUrl)).toBe(`${DEFAULT_RELEASE_PROXY_PREFIX}${releaseManifestUrl}`);
   });
 
   test("can leave release downloads direct when proxy is disabled explicitly", () => {
